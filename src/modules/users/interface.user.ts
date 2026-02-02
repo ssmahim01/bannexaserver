@@ -11,6 +11,8 @@ export interface IUser {
 
   role: UserRole;
   status: UserStatus;
+  provider?: string;
+  providerId?: string;
 
   // Profile
   profileImage?: string;

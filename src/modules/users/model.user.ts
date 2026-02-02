@@ -43,7 +43,6 @@ const userSchema = new Schema<IUser>(
         type: String,
         enum: ["free", "premium", "enterprise"],
         default: "free",
-        index: true,
       },
       isActive: {
         type: Boolean,
@@ -57,6 +56,14 @@ const userSchema = new Schema<IUser>(
       type: Boolean,
       default: false,
     },
+
+  provider: {
+    type: String,
+    enum: ["credentials", "google"],
+    default: "credentials",
+  },
+
+  providerId: String,
 
     tokenVersion: {
       type: Number,
