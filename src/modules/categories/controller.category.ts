@@ -7,7 +7,9 @@ export async function getCategoriesController(req: Request, res: Response) {
 }
 
 export async function getCategoryController(req: Request, res: Response) {
-  const { slug } = req.params;
+  const slug = Array.isArray(req.params.slug)
+    ? req.params.slug[0]
+    : req.params.slug;
 
   const category = await categoryService.getCategoryBySlug(slug);
   if (!category) {
@@ -24,13 +26,18 @@ export async function createCategoryController(req: Request, res: Response) {
 }
 
 export async function updateCategoryController(req: Request, res: Response) {
-  const { slug } = req.params;
+  const slug = Array.isArray(req.params.slug)
+    ? req.params.slug[0]
+    : req.params.slug;
   const updated = await categoryService.updateCategory(slug, req.body);
   return res.json({ success: true, data: updated });
 }
 
 export async function deleteCategoryController(req: Request, res: Response) {
-  const { slug } = req.params;
+  const slug = Array.isArray(req.params.slug)
+    ? req.params.slug[0]
+    : req.params.slug;
+
   await categoryService.deleteCategory(slug);
   return res.json({ success: true });
 }

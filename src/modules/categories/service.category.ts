@@ -1,6 +1,7 @@
 import { Category } from "./model.category";
 import { Types } from "mongoose";
-import Post from "../posts/post.model";
+import { Post } from "../posts/model.post";
+import { countPostsByCategory } from "../posts/service.post";
 
 export async function createCategory(payload: any, userId: string) {
   const exists = await Category.findOne({ slug: payload.slug });
@@ -15,26 +16,14 @@ export async function createCategory(payload: any, userId: string) {
 }
 
 export async function getAllCategories() {
-  const categories = await Category.find({ isActive: true })
-    .sort({ createdAt: -1 })
-    .lean();
+  const categories = await Category.find({ isActive: true });
 
-  // Attach templateCount dynamically
-  const result = await Promise.all(
-    categories.map(async (cat) => {
-      const count = await Post.countDocuments({
-        category: cat.slug,
-        isPublished: true,
-      });
-
-      return {
-        ...cat,
-        templateCount: count,
-      };
-    }),
+  return Promise.all(
+    categories.map(async (cat) => ({
+      ...cat.toObject(),
+      templateCount: await countPostsByCategory(cat._id.toString()),
+    })),
   );
-
-  return result;
 }
 
 export async function getCategoryBySlug(slug: string) {
