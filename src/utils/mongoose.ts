@@ -9,6 +9,6 @@ if (!cached) {
 export async function connectDB() {
   if (cached.conn) return cached.conn;
 
-  cached.conn = await mongoose.connect(process.env.DATABASE_URL!);
+  cached.conn = await mongoose.connect(process.env.MONGO_URI!);
   return cached.conn;
 }

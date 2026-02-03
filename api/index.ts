@@ -1,7 +1,3 @@
-import app from "../src/app";
-import { connectDB } from "../src/utils/mongoose";
+import app from "../dist/app";
 
-export default async function handler(req: any, res: any) {
-  await connectDB();
-  return app(req, res);
-}
+export default app;
