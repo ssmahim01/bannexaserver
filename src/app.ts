@@ -16,7 +16,7 @@ app.use(express.urlencoded({ extended: true, limit: "20mb" }));
 app.use(cookieParser());
 app.use(morgan("dev"));
 
-app.set("trust proxy", 1);
+app.set("trust proxy", true);
 
 const allowedOrigins = [
   "http://localhost:3000",
@@ -27,14 +27,22 @@ const allowedOrigins = [
 app.use(
   cors({
     origin: (origin, callback) => {
-      if (!origin || allowedOrigins.some((o) => origin.startsWith(o!))) {
+      if (!origin) return callback(null, true);
+
+      const allowed = [
+        "http://localhost:3000",
+        "https://bannexa.vercel.app",
+        process.env.FRONTEND_URL,
+      ];
+
+      if (allowed.some((o) => origin.includes(o!))) {
         callback(null, true);
       } else {
         callback(new Error("Not allowed by CORS"));
       }
     },
     credentials: true,
-  })
+  }),
 );
 
 app.use("/api/v1", router);
