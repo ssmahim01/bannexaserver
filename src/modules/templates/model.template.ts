@@ -25,6 +25,10 @@ const templateSchema = new Schema<ITemplate>(
       type: String,
       required: true,
     },
+    cloudinaryPublicId: {
+      type: String,
+      required: false,
+    },
 
     canvasWidth: {
       type: Number,
@@ -55,6 +59,17 @@ const templateSchema = new Schema<ITemplate>(
       ],
       required: true,
     },
+    downloads: {
+      type: Number,
+      default: 0,
+      min: [0, "Downloads cannot be negative"],
+      validate: {
+        validator: function (value: number) {
+          return !isNaN(value) && isFinite(value);
+        },
+        message: "Downloads must be a valid number",
+      },
+    },
 
     post: {
       type: Schema.Types.ObjectId,
@@ -77,7 +92,7 @@ const templateSchema = new Schema<ITemplate>(
   {
     timestamps: true,
     versionKey: false,
-  }
+  },
 );
 
 export const Template = model<ITemplate>("Template", templateSchema);

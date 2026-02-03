@@ -28,14 +28,17 @@ const postSchema = new Schema<IPost>(
     },
 
     likes: {
-      type: Number,
-      default: 0,
+      count: { type: Number, default: 0 },
+      users: [{ type: Schema.Types.ObjectId, ref: "User" }],
     },
 
     shares: {
-      type: Number,
-      default: 0,
+      count: { type: Number, default: 0 },
+      users: [{ type: Schema.Types.ObjectId, ref: "User" }],
     },
+
+    likedBy: [{ type: Schema.Types.ObjectId, ref: "User" }],
+    sharedBy: [{ type: Schema.Types.ObjectId, ref: "User" }],
 
     isTrending: {
       type: Boolean,

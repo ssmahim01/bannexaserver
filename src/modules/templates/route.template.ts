@@ -3,6 +3,7 @@ import {
   getTemplateController,
   createTemplateController,
   renderTemplateController,
+  downloadTemplateController,
 } from "./controller.template";
 
 import { authMiddleware } from "../../middlewares/auth.middleware";
@@ -12,6 +13,7 @@ const router = express.Router();
 
 router.get("/:slug", getTemplateController);
 router.post("/:slug/render", renderTemplateController);
+router.post("/:id/download", authMiddleware, downloadTemplateController);
 
 router.post(
   "/",

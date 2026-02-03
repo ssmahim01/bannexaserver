@@ -24,9 +24,14 @@ export interface IUser {
   subscription: {
     plan: SubscriptionPlan;
     isActive: boolean;
+    downloadUsedThisMonth: number
+    downloadResetAt: Date
     startedAt?: Date;
     expiresAt?: Date;
   };
+   savedPosts: Types.ObjectId[];
+   likedPosts: Types.ObjectId[];
+   sharedPosts: Types.ObjectId[];
 
   // Auth
   isEmailVerified: boolean;

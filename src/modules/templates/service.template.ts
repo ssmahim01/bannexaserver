@@ -19,10 +19,7 @@ export async function createTemplate(payload: any, userId: string) {
 }
 
 export async function getTemplateBySlug(slug: string) {
-  return Template.findOne({ slug, isActive: true }).populate(
-    "post",
-    "slug caption"
-  );
+  return Template.findOne({ slug, isActive: true })
 }
 
 export async function getTemplatesByPost(postSlug: string) {

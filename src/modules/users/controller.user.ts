@@ -23,7 +23,6 @@ export async function registerController(req: Request, res: Response) {
 
 export async function loginController(req: Request, res: Response) {
   const { email, pass } = req.body;
-
   const user = await userService.findUserByEmail(email);
   if (!user || !user.password) {
     return res.status(400).json({ error: "Invalid credentials" });

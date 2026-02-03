@@ -1,17 +1,14 @@
 import mongoose from "mongoose";
-import config from "../config";
-import logger from "./logger";
 
-export const connectDB = async () => {
-  try {
-    await mongoose.connect(config.databaseUrl, {
-      autoIndex: config.nodeEnv !== "production",
-      serverSelectionTimeoutMS: 5000,
-    });
+let cached = (global as any).mongoose;
 
-    logger.info("✅ MongoDB connected securely");
-  } catch (error) {
-    logger.error("❌ MongoDB connection failed", error);
-    process.exit(1);
-  }
-};
+if (!cached) {
+  cached = (global as any).mongoose = { conn: null };
+}
+
+export async function connectDB() {
+  if (cached.conn) return cached.conn;
+
+  cached.conn = await mongoose.connect(process.env.MONGO_URI!);
+  return cached.conn;
+}

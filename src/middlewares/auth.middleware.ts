@@ -1,10 +1,17 @@
-
 import { Request, Response, NextFunction } from "express";
 import jwt, { JwtPayload } from "jsonwebtoken";
 import User from "../modules/users/model.user";
-import { USER_STATUS, UserStatus } from "../modules/users/constant.user";
-import { isTokenBlacklisted, getUserTokenVersion } from "../utils/tokenBlacklist";
+import {
+  SubscriptionPlan,
+  USER_STATUS,
+  UserStatus,
+} from "../modules/users/constant.user";
+import {
+  isTokenBlacklisted,
+  getUserTokenVersion,
+} from "../utils/tokenBlacklist";
 import config from "../config/index";
+import { IUser } from "../modules/users/interface.user";
 
 interface DecodedToken extends JwtPayload {
   id: string;
@@ -14,79 +21,69 @@ interface DecodedToken extends JwtPayload {
 export async function authMiddleware(
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) {
   try {
-    const authHeader = req.headers.authorization;
-    const cookieToken =
-      req.cookies?.bannexa_token || req.cookies?.bannexa_refresh;
-
+    const header = req.headers.authorization;
     let token: string | null = null;
 
-    if (authHeader?.startsWith("Bearer ")) {
-      token = authHeader.split(" ")[1];
-    } else if (typeof cookieToken === "string") {
-      token = cookieToken;
+    if (header?.startsWith("Bearer ")) {
+      token = header.split(" ")[1];
     }
 
     if (!token) {
       return res.status(401).json({ error: "Unauthorized: missing token" });
     }
 
-    // Check blacklist (logout / revoke)
-    if (await isTokenBlacklisted(token)) {
-      return res.status(401).json({ error: "Token has been revoked" });
-    }
+    const decoded: any = jwt.verify(token, config.jwt.accessSecret);
 
-    let decoded: DecodedToken;
-    try {
-      decoded = jwt.verify(
-        token,
-        config.jwt.accessSecret
-      ) as DecodedToken;
-    } catch {
-      return res.status(401).json({ error: "Invalid or expired token" });
-    }
-
-    if (!decoded?.id) {
-      return res.status(401).json({ error: "Invalid token payload" });
-    }
-
-    // Token version check (force logout everywhere)
-    if (decoded.tokenVersion !== undefined) {
-      const currentVersion = await getUserTokenVersion(decoded.id);
-      if (decoded.tokenVersion < currentVersion) {
-        return res.status(401).json({
-          error: "Session expired. Please login again.",
-        });
-      }
-    }
-
-    // Fetch user from MongoDB
-    const user = await User.findById(decoded.id).select("-password");
+    const user = await User.findById(decoded.id);
     if (!user) {
       return res.status(401).json({ error: "User not found" });
     }
 
-    // Status check
-   const inactiveStatuses: UserStatus[] = [
-  USER_STATUS.BLOCK,
-  USER_STATUS.SUSPEND,
-];
+    const inactiveStatuses: UserStatus[] = [
+      USER_STATUS.BLOCK,
+      USER_STATUS.SUSPEND,
+    ];
 
-if (inactiveStatuses.includes(user.status)) {
-  return res.status(403).json({ error: "Account inactive" });
+    if (inactiveStatuses.includes(user.status)) {
+      return res.status(403).json({ error: "Account inactive" });
+    }
+
+    const userObj = user.toObject();
+    const { password, ...userWithoutPassword } = userObj;
+
+    if (!userWithoutPassword.subscription) {
+      userObj.subscription = {
+        plan: "free",
+        isActive: true,
+        downloadUsedThisMonth: 0,
+        downloadResetAt: new Date(),
+      };
+    }
+
+    if (!userObj.savedPosts) userObj.savedPosts = [];
+
+    req.user = userObj as any;
+    next();
+  } catch (err) {
+    return res.status(401).json({ error: "Invalid or expired token" });
+  }
 }
 
-    // Attach to request
-    req.user = {
-      id: user._id.toString(),
-      ...user.toObject(),
-    };
+export function getMonthlyLimit(plan: SubscriptionPlan) {
+  return plan === "premium" ? 150 : 2;
+}
 
-    next();
-  } catch (error) {
-    console.error("authMiddleware error:", error);
-    return res.status(500).json({ error: "Internal authentication error" });
+export function resetMonthlyDownloadIfNeeded(user: IUser) {
+  const now = new Date();
+  if (now > user.subscription.downloadResetAt) {
+    user.subscription.downloadUsedThisMonth = 0;
+    user.subscription.downloadResetAt = new Date(
+      now.getFullYear(),
+      now.getMonth() + 1,
+      1,
+    );
   }
 }

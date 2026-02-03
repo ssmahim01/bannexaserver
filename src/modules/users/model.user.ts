@@ -38,32 +38,47 @@ const userSchema = new Schema<IUser>(
     country: String,
     city: String,
 
+    savedPosts: {
+      type: [Schema.Types.ObjectId],
+      ref: "Post",
+      default: [],
+    },
+
     subscription: {
       plan: {
         type: String,
-        enum: ["free", "premium", "enterprise"],
+        enum: ["free", "premium"],
         default: "free",
       },
       isActive: {
         type: Boolean,
-        default: false,
+        default: true,
       },
-      startedAt: Date,
-      expiresAt: Date,
+      downloadUsedThisMonth: {
+        type: Number,
+        default: 0,
+      },
+      downloadResetAt: {
+        type: Date,
+        default: () => new Date(),
+      },
     },
+
+    likedPosts: [{ type: Schema.Types.ObjectId, ref: "Post" }],
+    sharedPosts: [{ type: Schema.Types.ObjectId, ref: "Post" }],
 
     isEmailVerified: {
       type: Boolean,
       default: false,
     },
 
-  provider: {
-    type: String,
-    enum: ["credentials", "google"],
-    default: "credentials",
-  },
+    provider: {
+      type: String,
+      enum: ["credentials", "google"],
+      default: "credentials",
+    },
 
-  providerId: String,
+    providerId: String,
 
     tokenVersion: {
       type: Number,
