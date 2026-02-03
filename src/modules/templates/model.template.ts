@@ -21,6 +21,10 @@ const templateSchema = new Schema<ITemplate>(
       type: String,
       required: true,
     },
+    baseImagePublicId: {
+      type: String,
+      required: true,
+    },
 
     canvasWidth: {
       type: Number,

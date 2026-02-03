@@ -17,13 +17,13 @@ router.get("/:slug", getCategoryController);
 router.post(
   "/",
   authMiddleware,
-  requireRole("admin"),
+  requireRole("admin", "premium"),
   createCategoryController,
 );
 router.put(
   "/:slug",
   authMiddleware,
-  requireRole("admin"),
+  requireRole("admin", "premium"),
   updateCategoryController,
 );
 router.delete(

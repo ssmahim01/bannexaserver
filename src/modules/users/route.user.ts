@@ -8,6 +8,7 @@ import {
   adminListUsers,
   adminDeleteUser,
   oauthGoogleController,
+  adminUpdateUser,
 } from "./controller.user";
 
 import { authMiddleware } from "../../middlewares/auth.middleware";
@@ -20,6 +21,7 @@ router.post("/login", loginController);
 
 router.get("/me", authMiddleware, getProfileController);
 router.put("/me", authMiddleware, updateProfileController);
+router.put("/update-user/:id", authMiddleware, adminUpdateUser);
 router.post("/me/change-password", authMiddleware, changePasswordController);
 
 router.post("/oauth-google", oauthGoogleController);

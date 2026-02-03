@@ -25,7 +25,7 @@ async function seedAdmin() {
     const admin = await User.create({
       fullName: "Super Admin",
       email: adminEmail,
-      password: hashedPassword,
+      pass: hashedPassword,
       role: "admin",
       status: "active",
       phone: "01700000000",

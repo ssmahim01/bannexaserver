@@ -20,6 +20,11 @@ router.get("/category/:slug", getPostsByCategoryController);
 router.post("/:id/like", likePostController);
 router.post("/:id/share", sharePostController);
 
-router.post("/", authMiddleware, requireRole("admin"), createPostController);
+router.post(
+  "/",
+  authMiddleware,
+  requireRole("admin", "premium"),
+  createPostController,
+);
 
 export const PostRoutes = router;

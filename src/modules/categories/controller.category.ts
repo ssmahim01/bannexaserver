@@ -20,7 +20,7 @@ export async function getCategoryController(req: Request, res: Response) {
 }
 
 export async function createCategoryController(req: Request, res: Response) {
-  const user = req.user!;
+  const user = req.user;
   const category = await categoryService.createCategory(req.body, user.id);
   return res.status(201).json({ success: true, data: category });
 }

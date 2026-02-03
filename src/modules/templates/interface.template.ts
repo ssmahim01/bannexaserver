@@ -18,6 +18,7 @@ export interface ITemplate {
     color?: string;
     placeholder?: boolean;
   }[];
+  baseImagePublicId: string;
 
   post: Types.ObjectId;
 

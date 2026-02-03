@@ -44,7 +44,7 @@ export async function loginController(req: Request, res: Response) {
     tokenVersion: user.tokenVersion,
   });
 
-   const { ...safeUser } = user.toObject();
+  const { ...safeUser } = user.toObject();
 
   return res.json({
     user: {
@@ -99,7 +99,7 @@ export async function oauthGoogleController(req: Request, res: Response) {
       if (Object.keys(updatePayload).length > 0) {
         user = (await userService.updateUser(
           user.id,
-          updatePayload
+          updatePayload,
         )) as typeof user;
       }
     }
@@ -121,10 +121,7 @@ export async function oauthGoogleController(req: Request, res: Response) {
   }
 }
 
-export async function changePasswordController(
-  req: Request,
-  res: Response
-) {
+export async function changePasswordController(req: Request, res: Response) {
   try {
     const user = req.user;
     if (!user) {
@@ -176,6 +173,21 @@ export async function updateProfileController(req: Request, res: Response) {
 
   const updated = await userService.updateUser(user.id, req.body);
   return res.json({ success: true, data: updated });
+}
+
+export async function adminUpdateUser(req: Request, res: Response) {
+  try {
+    const { id } = req.params;
+    const payload = req.body;
+
+    const user = await userService.updateUser(id as string, payload);
+    if (!user) return res.status(404).json({ error: "User not found" });
+
+    return res.json(user);
+  } catch (err) {
+    console.error("adminUpdateUser", err);
+    return res.status(500).json({ error: "Update failed" });
+  }
 }
 
 export async function adminListUsers(req: Request, res: Response) {
