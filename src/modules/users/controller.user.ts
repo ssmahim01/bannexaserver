@@ -162,7 +162,7 @@ export async function getProfileController(req: Request, res: Response) {
   const user = req.user;
   if (!user) return res.status(401).json({ error: "Unauthorized" });
 
-  const data = await userService.findUserById(user.id);
+  const data = await userService.findUserById(user._id);
   return res.json({ success: true, data });
 }
 
@@ -170,7 +170,7 @@ export async function updateProfileController(req: Request, res: Response) {
   const user = req.user;
   if (!user) return res.status(401).json({ error: "Unauthorized" });
 
-  const updated = await userService.updateUser(user.id, req.body);
+  const updated = await userService.updateUser(user._id, req.body);
   return res.json({ success: true, data: updated });
 }
 

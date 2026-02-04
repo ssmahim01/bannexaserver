@@ -39,7 +39,7 @@ export async function findUserByEmail(email: string) {
 }
 
 export async function findUserById(userId: string) {
-  return User.findById(userId).select("-password");
+  return User.findById({_id: userId});
 }
 
 export async function verifyPassword(user: any, plainPassword: string) {
@@ -58,21 +58,13 @@ export function signTokens(user: {
     tokenVersion: user.tokenVersion ?? 0,
   };
 
-  const accessToken = jwt.sign(
-    payload,
-    config.jwt.accessSecret,
-    {
-      expiresIn: config.jwt.accessExpiresIn,
-    }
-  );
+  const accessToken = jwt.sign(payload, config.jwt.accessSecret, {
+    expiresIn: config.jwt.accessExpiresIn,
+  });
 
-  const refreshToken = jwt.sign(
-    payload,
-    config.jwt.refreshSecret,
-    {
-      expiresIn: config.jwt.refreshExpiresIn,
-    }
-  );
+  const refreshToken = jwt.sign(payload, config.jwt.refreshSecret, {
+    expiresIn: config.jwt.refreshExpiresIn,
+  });
 
   return { accessToken, refreshToken };
 }

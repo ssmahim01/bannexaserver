@@ -23,7 +23,7 @@ const templateSchema = new Schema<ITemplate>(
     },
     baseImagePublicId: {
       type: String,
-      required: true,
+      required: false,
     },
     cloudinaryPublicId: {
       type: String,

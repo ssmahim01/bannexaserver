@@ -6,17 +6,8 @@ import {
   USER_STATUS,
   UserStatus,
 } from "../modules/users/constant.user";
-import {
-  isTokenBlacklisted,
-  getUserTokenVersion,
-} from "../utils/tokenBlacklist";
 import config from "../config/index";
 import { IUser } from "../modules/users/interface.user";
-
-interface DecodedToken extends JwtPayload {
-  id: string;
-  tokenVersion?: number;
-}
 
 export async function authMiddleware(
   req: Request,

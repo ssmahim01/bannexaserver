@@ -74,7 +74,7 @@ export async function renderTemplateController(req: Request, res: Response) {
 
     // Build banner URL
     const url = buildBannerUrl(
-      template.baseImagePublicId,
+      template?.baseImagePublicId ?? "",
       layers,
       template.canvasWidth,
       template.canvasHeight,
@@ -178,7 +178,7 @@ export async function downloadTemplateController(req: Request, res: Response) {
     await Promise.all([user.save(), template.save()]);
 
     // Generate signed Cloudinary URL
-    const signedUrl = getSignedDownloadUrl(template.baseImagePublicId);
+    const signedUrl = getSignedDownloadUrl(template?.baseImagePublicId ?? "");
 
     return res.json({
       success: true,
@@ -201,7 +201,7 @@ export async function downloadTemplateController(req: Request, res: Response) {
 export async function createTemplateController(req: Request, res: Response) {
   try {
     // Check authentication
-    if (!req.user || !req.user.id) {
+    if (!req.user) {
       return res.status(401).json({
         success: false,
         message: "Authentication required",

@@ -55,14 +55,14 @@ export async function createPostController(req: Request, res: Response) {
 export async function toggleLikePostController(req: Request, res: Response) {
   try {
     // Check authentication
-    if (!req.user || !req.user.id) {
+    if (!req.user || !req.user?._id) {
       return res.status(401).json({
         success: false,
         message: "Authentication required",
       });
     }
 
-    const userId = req.user.id;
+    const userId = req.user._id;
     const postId = Array.isArray(req.params.id)
       ? req.params.id[0]
       : req.params.id;
@@ -136,14 +136,14 @@ export async function toggleLikePostController(req: Request, res: Response) {
 export async function sharePostController(req: Request, res: Response) {
   try {
     // Check authentication
-    if (!req.user || !req.user.id) {
+    if (!req.user || !req.user._id) {
       return res.status(401).json({
         success: false,
         message: "Authentication required",
       });
     }
 
-    const userId = req.user.id;
+    const userId = req.user._id;
     const postId = Array.isArray(req.params.id)
       ? req.params.id[0]
       : req.params.id;
@@ -221,14 +221,14 @@ export async function sharePostController(req: Request, res: Response) {
 export async function toggleSavePostController(req: Request, res: Response) {
   try {
     // Check authentication
-    if (!req.user || !req.user.id) {
+    if (!req.user || !req.user._id) {
       return res.status(401).json({
         success: false,
         message: "Authentication required",
       });
     }
 
-    const userId = req.user.id;
+    const userId = req.user._id;
     const postId = Array.isArray(req.params.id)
       ? req.params.id[0]
       : req.params.id;

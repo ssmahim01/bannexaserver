@@ -19,7 +19,7 @@ export interface ITemplate {
     color?: string;
     placeholder?: boolean;
   }[];
-  baseImagePublicId: string;
+  baseImagePublicId?: string;
   cloudinaryPublicId: string;
 
   post: Types.ObjectId;
