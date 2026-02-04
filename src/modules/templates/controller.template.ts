@@ -14,7 +14,9 @@ export const getSingleParam = (param: string | string[]) =>
 
 export async function getTemplateController(req: Request, res: Response) {
   try {
-    const slug = getSingleParam(req.params.slug);
+    const slug = Array.isArray(req.params.slug)
+      ? req.params.slug[0]
+      : req.params.slug;
 
     if (!slug) {
       return res.status(400).json({
