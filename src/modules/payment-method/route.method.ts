@@ -52,4 +52,4 @@ router.delete(
   deletePaymentMethodController,
 );
 
-export default router;
+export const PaymentMethodRoutes = router;
