@@ -1,6 +1,19 @@
 import { Types } from "mongoose";
 import { Post } from "./model.post";
 import { Category } from "../categories/model.category";
+import { generateSlug } from "../../utils/slug";
+
+async function generateUniqueSlug(base: string): Promise<string> {
+  let slug = base;
+  let count = 1;
+
+  while (await Post.exists({ slug })) {
+    slug = `${base}-${count}`;
+    count++;
+  }
+
+  return slug;
+}
 
 export async function createPost(payload: any, userId: string) {
   const category = await Category.findOne({ slug: payload.categorySlug });
@@ -8,9 +21,13 @@ export async function createPost(payload: any, userId: string) {
     throw new Error("Invalid category");
   }
 
+  const baseSlug = generateSlug(payload.title);
+  const uniqueSlug = await generateUniqueSlug(baseSlug);
+
   const post = await Post.create({
-    slug: payload.slug,
-    image: payload.image,
+    title: payload.title,
+    slug: uniqueSlug,
+    image: payload.imageUrl || payload.image,
     caption: payload.caption,
     hashtags: payload.hashtags || [],
 
@@ -37,28 +54,23 @@ export async function getAllPosts(filter: any = {}) {
 }
 
 export async function getPostBySlug(slug: string) {
-  return Post.findOne({ slug, isActive: true })
-    .populate("category", "slug name nameEn");
+  return Post.findOne({ slug, isActive: true }).populate(
+    "category",
+    "slug name nameEn",
+  );
 }
 
-export async function getPostsByUser(userId: string) {
-  return Post.find({ userId, isActive: true })
+export async function getPostsByUser(userId: Types.ObjectId) {
+  return Post.find({ createdBy: userId })
     .populate("category", "name slug")
     .sort({ createdAt: -1 });
 }
 
-export async function updatePost(
-  postId: string,
-  payload: any,
-  user: any
-) {
+export async function updatePost(postId: string, payload: any, user: any) {
   const post = await Post.findById(postId);
   if (!post) throw new Error("Post not found");
 
-  if (
-    post.createdBy?.toString() !== user.id &&
-    user.role !== "admin"
-  ) {
+  if (post.createdBy?.toString() !== user.id && user.role !== "admin") {
     throw new Error("Forbidden");
   }
 
@@ -70,10 +82,7 @@ export async function deletePost(postId: string, user: any) {
   const post = await Post.findById(postId);
   if (!post) throw new Error("Post not found");
 
-  if (
-    post.createdBy?.toString() !== user.id &&
-    user.role !== "admin"
-  ) {
+  if (post.createdBy?.toString() !== user.id && user.role !== "admin") {
     throw new Error("Forbidden");
   }
 
@@ -99,17 +108,9 @@ export async function countPostsByCategory(categoryId: string) {
 }
 
 export async function likePost(postId: string) {
-  return Post.findByIdAndUpdate(
-    postId,
-    { $inc: { likes: 1 } },
-    { new: true }
-  );
+  return Post.findByIdAndUpdate(postId, { $inc: { likes: 1 } }, { new: true });
 }
 
 export async function sharePost(postId: string) {
-  return Post.findByIdAndUpdate(
-    postId,
-    { $inc: { shares: 1 } },
-    { new: true }
-  );
+  return Post.findByIdAndUpdate(postId, { $inc: { shares: 1 } }, { new: true });
 }

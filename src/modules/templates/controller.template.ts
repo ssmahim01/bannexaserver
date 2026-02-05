@@ -8,6 +8,7 @@ import {
 } from "../../middlewares/auth.middleware";
 import { getSignedDownloadUrl } from "../../utils/cloudinary";
 import mongoose from "mongoose";
+import { Types } from "mongoose";
 
 export const getSingleParam = (param: string | string[]) =>
   Array.isArray(param) ? param[0] : param;
@@ -100,7 +101,9 @@ export async function renderTemplateController(req: Request, res: Response) {
 }
 
 export async function getMyTemplatesController(req: Request, res: Response) {
-  const templates = await templateService.getTemplatesByUser(req.user?._id);
+  const userId = new Types.ObjectId(req.user._id);
+
+  const templates = await templateService.getTemplatesByUser(userId);
   res.json({ success: true, data: templates });
 }
 
@@ -237,7 +240,7 @@ export async function createTemplateController(req: Request, res: Response) {
     }
 
     const user = req.user;
-    const template = await templateService.createTemplate(req.body, user.id);
+    const template = await templateService.createTemplate(req.body, user._id);
 
     return res.status(201).json({
       success: true,

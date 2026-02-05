@@ -33,7 +33,7 @@ export async function getPostController(req: Request, res: Response) {
 }
 
 export async function getMyPostsController(req: Request, res: Response) {
-  const userId = req.user?._id;
+    const userId = new Types.ObjectId(req.user._id);
   const posts = await postService.getPostsByUser(userId);
   res.json({ success: true, data: posts });
 }
@@ -67,7 +67,7 @@ export async function getPostsByCategoryController(
 
 export async function createPostController(req: Request, res: Response) {
   const user = req.user;
-  const post = await postService.createPost(req.body, user.id);
+  const post = await postService.createPost(req.body, user._id);
 
   return res.status(201).json({ success: true, data: post });
 }
@@ -125,12 +125,18 @@ export async function toggleLikePostController(req: Request, res: Response) {
       post.likes.count = Math.max(0, post.likes.count - 1);
     } else {
       // Like
+      if (!userId) {
+        return res.status(401).json({ error: "Unauthorized" });
+      }
+
       post.likedBy.push(new Types.ObjectId(userId));
+
       post.likes.count = post.likes.count + 1;
     }
 
     // Sync likes.users with likedBy (keep them consistent)
     post.likes.users = post.likedBy;
+    post.likedBy = post.likedBy.filter(Boolean);
 
     // Save post
     await post.save();

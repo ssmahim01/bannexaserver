@@ -1,19 +1,37 @@
 import { Types } from "mongoose";
 import { Template } from "./model.template";
 import { Post } from "../posts/model.post";
+import { generateSlug } from "../../utils/slug";
+
+async function generateUniqueSlug(
+  base: string,
+): Promise<string> {
+  let slug = base;
+  let count = 1;
+
+  while (await Template.exists({ slug })) {
+    slug = `${base}-${count}`;
+    count++;
+  }
+
+  return slug;
+}
 
 export async function createTemplate(payload: any, userId: string) {
   const post = await Post.findOne({ slug: payload.postSlug });
   if (!post) throw new Error("Post not found");
 
+   const baseSlug = generateSlug(payload.title);
+  const uniqueSlug = await generateUniqueSlug(baseSlug);
+
   return Template.create({
-    slug: payload.slug,
+    slug: uniqueSlug,
     title: payload.title,
     previewImage: payload.previewImage,
     canvasWidth: payload.canvasWidth,
     canvasHeight: payload.canvasHeight,
     layers: payload.layers,
-    post: post._id,
+    post: payload.post._id,
     createdBy: new Types.ObjectId(userId),
   });
 }
@@ -25,7 +43,7 @@ export async function getTemplateBySlug(slug: string) {
   }).populate("post", "slug caption image");
 }
 
-export async function getTemplatesByUser(userId: string) {
+export async function getTemplatesByUser(userId: Types.ObjectId) {
   return Template.find({
     createdBy: userId,
     isActive: true,

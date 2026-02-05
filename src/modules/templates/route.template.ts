@@ -24,7 +24,6 @@ router.delete("/:id", authMiddleware, deleteTemplateController);
 router.post(
   "/",
   authMiddleware,
-  requireRole("admin"),
   createTemplateController,
 );
 

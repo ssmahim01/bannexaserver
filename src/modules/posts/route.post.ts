@@ -31,7 +31,6 @@ router.delete("/:id", authMiddleware, deletePostController);
 router.post(
   "/",
   authMiddleware,
-  requireRole("admin", "premium"),
   createPostController,
 );
 
