@@ -41,6 +41,46 @@ export async function getPostBySlug(slug: string) {
     .populate("category", "slug name nameEn");
 }
 
+export async function getPostsByUser(userId: string) {
+  return Post.find({ userId, isActive: true })
+    .populate("category", "name slug")
+    .sort({ createdAt: -1 });
+}
+
+export async function updatePost(
+  postId: string,
+  payload: any,
+  user: any
+) {
+  const post = await Post.findById(postId);
+  if (!post) throw new Error("Post not found");
+
+  if (
+    post.createdBy?.toString() !== user.id &&
+    user.role !== "admin"
+  ) {
+    throw new Error("Forbidden");
+  }
+
+  Object.assign(post, payload);
+  return post.save();
+}
+
+export async function deletePost(postId: string, user: any) {
+  const post = await Post.findById(postId);
+  if (!post) throw new Error("Post not found");
+
+  if (
+    post.createdBy?.toString() !== user.id &&
+    user.role !== "admin"
+  ) {
+    throw new Error("Forbidden");
+  }
+
+  post.isActive = false;
+  await post.save();
+}
+
 export async function getPostsByCategory(categorySlug: string) {
   const category = await Category.findOne({ slug: categorySlug });
   if (!category) return [];

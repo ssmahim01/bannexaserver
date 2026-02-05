@@ -32,6 +32,26 @@ export async function getPostController(req: Request, res: Response) {
   return res.json({ success: true, data: post });
 }
 
+export async function getMyPostsController(req: Request, res: Response) {
+  const userId = req.user?._id;
+  const posts = await postService.getPostsByUser(userId);
+  res.json({ success: true, data: posts });
+}
+
+export async function updatePostController(req: Request, res: Response) {
+  const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+
+  const post = await postService.updatePost(id, req.body, req.user!);
+  res.json({ success: true, data: post });
+}
+
+export async function deletePostController(req: Request, res: Response) {
+  const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+
+  await postService.deletePost(id, req.user!);
+  res.json({ success: true });
+}
+
 export async function getPostsByCategoryController(
   req: Request,
   res: Response,

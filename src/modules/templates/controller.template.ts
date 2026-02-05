@@ -72,7 +72,10 @@ export async function renderTemplateController(req: Request, res: Response) {
       });
     }
 
-    // Build banner URL
+    const user = req?.user;
+
+    const isPremium = user?.subscription.plan === "premium";
+
     const url = buildBannerUrl(
       template?.baseImagePublicId ?? "",
       layers,
@@ -94,6 +97,31 @@ export async function renderTemplateController(req: Request, res: Response) {
       error: process.env.NODE_ENV === "development" ? error : undefined,
     });
   }
+}
+
+export async function getMyTemplatesController(req: Request, res: Response) {
+  const templates = await templateService.getTemplatesByUser(req.user?._id);
+  res.json({ success: true, data: templates });
+}
+
+// PUT
+export async function updateTemplateController(req: Request, res: Response) {
+  const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+
+  const template = await templateService.updateTemplate(
+    id,
+    req.body,
+    req.user!,
+  );
+  res.json({ success: true, data: template });
+}
+
+// DELETE
+export async function deleteTemplateController(req: Request, res: Response) {
+  const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+
+  await templateService.deleteTemplate(id, req.user!);
+  res.json({ success: true });
 }
 
 export async function downloadTemplateController(req: Request, res: Response) {
