@@ -13,6 +13,16 @@ import { Types } from "mongoose";
 export const getSingleParam = (param: string | string[]) =>
   Array.isArray(param) ? param[0] : param;
 
+export async function getPublicTemplates(req: Request, res: Response) {
+  const templates = await templateService.getPublicTemplates();
+  res.json({ success: true, data: templates });
+}
+
+export async function getAllTemplatesAdmin(req: Request, res: Response) {
+  const templates = await templateService.getAllTemplates();
+  res.json({ success: true, data: templates });
+}
+
 export async function getTemplateController(req: Request, res: Response) {
   try {
     const slug = Array.isArray(req.params.slug)

@@ -17,6 +17,20 @@ async function generateUniqueSlug(
   return slug;
 }
 
+export function getPublicTemplates() {
+  return Template.find({ isActive: true })
+    .populate("post", "slug caption image")
+    .sort({ createdAt: -1 });
+}
+
+export function getAllTemplates() {
+  return Template.find()
+    .populate("post", "slug caption")
+    .populate("createdBy", "fullName email")
+    .sort({ createdAt: -1 });
+}
+
+
 export async function createTemplate(payload: any, userId: string) {
   const post = await Post.findOne({ slug: payload.postSlug });
   if (!post) throw new Error("Post not found");

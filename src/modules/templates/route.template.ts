@@ -7,6 +7,8 @@ import {
   getMyTemplatesController,
   updateTemplateController,
   deleteTemplateController,
+  getPublicTemplates,
+  getAllTemplatesAdmin,
 } from "./controller.template";
 
 import { authMiddleware } from "../../middlewares/auth.middleware";
@@ -16,15 +18,18 @@ const router = express.Router();
 
 router.get("/:slug", getTemplateController);
 router.get("/me", authMiddleware, getMyTemplatesController);
+router.get("/", getPublicTemplates);
+router.get(
+  "/admin/templates",
+  authMiddleware,
+  requireRole("admin"),
+  getAllTemplatesAdmin,
+);
 router.post("/:slug/render", renderTemplateController);
 router.post("/:id/download", authMiddleware, downloadTemplateController);
 
 router.put("/:id", authMiddleware, updateTemplateController);
 router.delete("/:id", authMiddleware, deleteTemplateController);
-router.post(
-  "/",
-  authMiddleware,
-  createTemplateController,
-);
+router.post("/", authMiddleware, createTemplateController);
 
 export const TemplateRoutes = router;
