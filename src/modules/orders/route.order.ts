@@ -31,7 +31,7 @@ router.patch(
   authMiddleware,
   requireRole("admin"),
 
-  validate(updateOrderStatusSchema),
+  // validate(updateOrderStatusSchema),
   OrderController.updateOrderStatusController,
 );
 

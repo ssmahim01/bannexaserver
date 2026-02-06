@@ -24,7 +24,7 @@ router.post(
   "/",
   authMiddleware,
   requireRole("admin"),
-  validate(createPaymentMethodSchema),
+  // validate(createPaymentMethodSchema),
   createPaymentMethodController,
 );
 
