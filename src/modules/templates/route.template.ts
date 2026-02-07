@@ -26,7 +26,7 @@ router.get(
   getAllTemplatesAdmin,
 );
 router.post("/:slug/render", renderTemplateController);
-router.post("/:id/download", authMiddleware, downloadTemplateController);
+router.post("/:slug/download", authMiddleware, downloadTemplateController);
 
 router.put("/:id", authMiddleware, updateTemplateController);
 router.delete("/:id", authMiddleware, deleteTemplateController);

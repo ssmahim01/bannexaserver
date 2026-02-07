@@ -21,7 +21,5 @@ export const createTemplateSchema = z.object({
         placeholder: z.boolean().optional(),
       })
     ),
-
-    postSlug: z.string(),
   }),
 });

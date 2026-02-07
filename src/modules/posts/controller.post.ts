@@ -33,7 +33,7 @@ export async function getPostController(req: Request, res: Response) {
 }
 
 export async function getMyPostsController(req: Request, res: Response) {
-    const userId = new Types.ObjectId(req.user._id);
+  const userId = new Types.ObjectId(req.user._id);
   const posts = await postService.getPostsByUser(userId);
   res.json({ success: true, data: posts });
 }
@@ -88,7 +88,7 @@ export async function toggleLikePostController(req: Request, res: Response) {
       : req.params.id;
 
     // Find post
-    const post = await Post.findById(postId);
+    const post = await Post.findById({ _id: postId });
     if (!post) {
       return res.status(404).json({
         success: false,

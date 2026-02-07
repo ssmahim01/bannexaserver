@@ -54,7 +54,7 @@ const templateSchema = new Schema<ITemplate>(
           height: Number,
           fontSize: Number,
           color: String,
-          placeholder: Boolean,
+          placeholder: String,
         },
       ],
       required: true,
@@ -69,13 +69,6 @@ const templateSchema = new Schema<ITemplate>(
         },
         message: "Downloads must be a valid number",
       },
-    },
-
-    post: {
-      type: Schema.Types.ObjectId,
-      ref: "Post",
-      required: true,
-      index: true,
     },
 
     isActive: {

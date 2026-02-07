@@ -17,13 +17,10 @@ export interface ITemplate {
     height?: number;
     fontSize?: number;
     color?: string;
-    placeholder?: boolean;
+    placeholder?: string;
   }[];
   baseImagePublicId?: string;
   cloudinaryPublicId: string;
-
-  post: Types.ObjectId;
-
   isActive: boolean;
 
   createdBy: Types.ObjectId;

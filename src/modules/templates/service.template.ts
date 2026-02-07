@@ -3,9 +3,7 @@ import { Template } from "./model.template";
 import { Post } from "../posts/model.post";
 import { generateSlug } from "../../utils/slug";
 
-async function generateUniqueSlug(
-  base: string,
-): Promise<string> {
+async function generateUniqueSlug(base: string): Promise<string> {
   let slug = base;
   let count = 1;
 
@@ -18,24 +16,17 @@ async function generateUniqueSlug(
 }
 
 export function getPublicTemplates() {
-  return Template.find({ isActive: true })
-    .populate("post", "slug caption image")
-    .sort({ createdAt: -1 });
+  return Template.find({ isActive: true }).sort({ createdAt: -1 });
 }
 
 export function getAllTemplates() {
   return Template.find()
-    .populate("post", "slug caption")
     .populate("createdBy", "fullName email")
     .sort({ createdAt: -1 });
 }
 
-
 export async function createTemplate(payload: any, userId: string) {
-  const post = await Post.findOne({ slug: payload.postSlug });
-  if (!post) throw new Error("Post not found");
-
-   const baseSlug = generateSlug(payload.title);
+  const baseSlug = generateSlug(payload.title);
   const uniqueSlug = await generateUniqueSlug(baseSlug);
 
   return Template.create({
@@ -45,8 +36,7 @@ export async function createTemplate(payload: any, userId: string) {
     canvasWidth: payload.canvasWidth,
     canvasHeight: payload.canvasHeight,
     layers: payload.layers,
-    post: payload.post._id,
-    createdBy: new Types.ObjectId(userId),
+    createdBy: userId,
   });
 }
 
@@ -54,30 +44,20 @@ export async function getTemplateBySlug(slug: string) {
   return Template.findOne({
     slug,
     isActive: true,
-  }).populate("post", "slug caption image");
+  }).sort({ createdAt: -1 });
 }
 
 export async function getTemplatesByUser(userId: Types.ObjectId) {
-  return Template.find({
-    createdBy: userId,
-    isActive: true,
-  })
-    .populate("post", "slug caption image")
-    .sort({ createdAt: -1 });
+  return Template.find({ createdBy: new Types.ObjectId(userId) }).sort({
+    createdAt: -1,
+  });
 }
 
-export async function updateTemplate(
-  id: string,
-  payload: any,
-  user: any
-) {
+export async function updateTemplate(id: string, payload: any, user: any) {
   const template = await Template.findById(id);
   if (!template) throw new Error("Template not found");
 
-  if (
-    template.createdBy?.toString() !== user._id &&
-    user.role !== "admin"
-  ) {
+  if (template.createdBy?.toString() !== user._id && user.role !== "admin") {
     throw new Error("Forbidden");
   }
 
@@ -89,10 +69,7 @@ export async function deleteTemplate(id: string, user: any) {
   const template = await Template.findById(id);
   if (!template) throw new Error("Template not found");
 
-  if (
-    template.createdBy?.toString() !== user._id &&
-    user.role !== "admin"
-  ) {
+  if (template.createdBy?.toString() !== user._id && user.role !== "admin") {
     throw new Error("Forbidden");
   }
 
@@ -109,4 +86,3 @@ export async function getTemplatesByPostSlug(postSlug: string) {
     isActive: true,
   }).sort({ createdAt: -1 });
 }
-

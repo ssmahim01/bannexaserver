@@ -111,7 +111,7 @@ export async function renderTemplateController(req: Request, res: Response) {
 }
 
 export async function getMyTemplatesController(req: Request, res: Response) {
-  const userId = new Types.ObjectId(req.user._id);
+  const userId = req?.user?._id;
 
   const templates = await templateService.getTemplatesByUser(userId);
   res.json({ success: true, data: templates });
@@ -140,7 +140,7 @@ export async function deleteTemplateController(req: Request, res: Response) {
 export async function downloadTemplateController(req: Request, res: Response) {
   try {
     // Check authentication
-    if (!req.user || !req.user.id) {
+    if (!req.user || !req.user._id) {
       return res.status(401).json({
         success: false,
         message: "Authentication required",

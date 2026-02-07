@@ -13,7 +13,6 @@ import {
 } from "./controller.post";
 
 import { authMiddleware } from "../../middlewares/auth.middleware";
-import { requireRole } from "../../middlewares/role.middleware";
 
 const router = express.Router();
 
