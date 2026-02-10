@@ -40,7 +40,8 @@ export async function createTemplate(payload: any, userId: Types.ObjectId) {
   return Template.create({
     slug: uniqueSlug,
     title: payload.title,
-    category: category?.name,
+    category: category?._id,
+    categoryName: category?.nameEn || category?.name || "Uncategorized",
     previewImage: payload.previewImage,
     canvasWidth: payload.canvasWidth,
     canvasHeight: payload.canvasHeight,
