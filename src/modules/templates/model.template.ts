@@ -40,25 +40,32 @@ const templateSchema = new Schema<ITemplate>(
       required: true,
     },
 
-    layers: {
-      type: [
-        {
-          type: {
-            type: String,
-            enum: ["image", "text"],
-            required: true,
-          },
-          x: Number,
-          y: Number,
-          width: Number,
-          height: Number,
-          fontSize: Number,
-          color: String,
-          placeholder: String,
-        },
-      ],
+    category: {
+      type: Schema.Types.ObjectId,
+      ref: "Category",
       required: true,
+      index: true,
     },
+
+    // layers: {
+    //   type: [
+    //     {
+    //       type: {
+    //         type: String,
+    //         enum: ["image", "text"],
+    //         required: true,
+    //       },
+    //       x: Number,
+    //       y: Number,
+    //       width: Number,
+    //       height: Number,
+    //       fontSize: Number,
+    //       color: String,
+    //       placeholder: String,
+    //     },
+    //   ],
+    //   required: true,
+    // },
     downloads: {
       type: Number,
       default: 0,

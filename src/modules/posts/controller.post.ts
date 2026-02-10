@@ -34,7 +34,7 @@ export async function getPostController(req: Request, res: Response) {
 
 export async function getMyPostsController(req: Request, res: Response) {
   const userId = new Types.ObjectId(req.user._id);
-  const posts = await postService.getPostsByUser(userId);
+  const posts = await Post.find({createdBy: new Types.ObjectId(userId)});
   res.json({ success: true, data: posts });
 }
 

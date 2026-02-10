@@ -2,6 +2,7 @@ import { Types } from "mongoose";
 import { Template } from "./model.template";
 import { Post } from "../posts/model.post";
 import { generateSlug } from "../../utils/slug";
+import { Category } from "../categories/model.category";
 
 async function generateUniqueSlug(base: string): Promise<string> {
   let slug = base;
@@ -16,27 +17,34 @@ async function generateUniqueSlug(base: string): Promise<string> {
 }
 
 export function getPublicTemplates() {
-  return Template.find({ isActive: true }).sort({ createdAt: -1 });
+  return Template.find({ isActive: true })
+    .populate("category", "slug name nameEn")
+    .sort({ createdAt: -1 });
 }
 
 export function getAllTemplates() {
   return Template.find()
+    .populate("category", "slug name nameEn")
     .populate("createdBy", "fullName email")
     .sort({ createdAt: -1 });
 }
 
-export async function createTemplate(payload: any, userId: string) {
+export async function createTemplate(payload: any, userId: Types.ObjectId) {
   const baseSlug = generateSlug(payload.title);
   const uniqueSlug = await generateUniqueSlug(baseSlug);
+  const category = await Category.findOne({ slug: payload.categorySlug });
+  if (!category) {
+    throw new Error("Invalid category");
+  }
 
   return Template.create({
     slug: uniqueSlug,
     title: payload.title,
+    category: category?.name,
     previewImage: payload.previewImage,
     canvasWidth: payload.canvasWidth,
     canvasHeight: payload.canvasHeight,
-    layers: payload.layers,
-    createdBy: userId,
+    createdBy: new Types.ObjectId(userId),
   });
 }
 
@@ -44,13 +52,19 @@ export async function getTemplateBySlug(slug: string) {
   return Template.findOne({
     slug,
     isActive: true,
-  }).sort({ createdAt: -1 });
+  })
+    .sort({ createdAt: -1 })
+    .populate("category", "slug name nameEn")
+    .populate("createdBy", "fullName");
 }
 
 export async function getTemplatesByUser(userId: Types.ObjectId) {
-  return Template.find({ createdBy: new Types.ObjectId(userId) }).sort({
-    createdAt: -1,
-  });
+  return Template.find({ createdBy: new Types.ObjectId(userId) })
+    .sort({
+      createdAt: -1,
+    })
+    .populate("category", "slug name nameEn")
+    .sort({ createdAt: -1 });
 }
 
 export async function updateTemplate(id: string, payload: any, user: any) {

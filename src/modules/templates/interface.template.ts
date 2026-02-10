@@ -5,20 +5,21 @@ export interface ITemplate {
   title: string;
   previewImage: string;
   downloads: number;
+  category: Types.ObjectId;
 
   canvasWidth: number;
   canvasHeight: number;
 
-  layers: {
-    type: "image" | "text";
-    x: number;
-    y: number;
-    width?: number;
-    height?: number;
-    fontSize?: number;
-    color?: string;
-    placeholder?: string;
-  }[];
+  // layers: {
+  //   type: "image" | "text";
+  //   x: number;
+  //   y: number;
+  //   width?: number;
+  //   height?: number;
+  //   fontSize?: number;
+  //   color?: string;
+  //   placeholder?: string;
+  // }[];
   baseImagePublicId?: string;
   cloudinaryPublicId: string;
   isActive: boolean;
