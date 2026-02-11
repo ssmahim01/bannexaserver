@@ -13,10 +13,17 @@ const userSchema = new Schema<IUser>(
       index: true,
     },
 
+    provider: {
+      type: String,
+      enum: ["credentials", "google"],
+      default: "credentials",
+    },
+
     password: {
       type: String,
-      required: true,
-      select: false,
+      required: function (this: any) {
+        return this.provider !== "google";
+      },
     },
 
     role: {
@@ -70,12 +77,6 @@ const userSchema = new Schema<IUser>(
     isEmailVerified: {
       type: Boolean,
       default: false,
-    },
-
-    provider: {
-      type: String,
-      enum: ["credentials", "google"],
-      default: "credentials",
     },
 
     providerId: String,
