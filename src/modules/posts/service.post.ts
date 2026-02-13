@@ -21,7 +21,7 @@ export async function createPost(payload: any, userId: string) {
     throw new Error("Invalid category");
   }
 
-  const baseSlug = generateSlug(payload.title);
+  const baseSlug = generateSlug(payload.slug || payload.title);
   const uniqueSlug = await generateUniqueSlug(baseSlug);
 
   const post = await Post.create({
