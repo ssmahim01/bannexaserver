@@ -59,11 +59,11 @@ export async function getTemplateBySlug(slug: string) {
     .populate("createdBy", "fullName");
 }
 
-export async function getTemplatesByUser(userId: Types.ObjectId) {
-  return Template.find({ createdBy: new Types.ObjectId(userId) })
-    .sort({
-      createdAt: -1,
-    })
+export async function getTemplatesByUser(user: any) {
+  return Template.find({
+    createdBy: new Types.ObjectId(user?._id),
+    isActive: true,
+  })
     .populate("category", "slug name nameEn")
     .sort({ createdAt: -1 });
 }

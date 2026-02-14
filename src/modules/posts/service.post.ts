@@ -76,9 +76,12 @@ export async function getSavedPostsByUser(userId: Types.ObjectId) {
   return user.savedPosts;
 }
 
-export async function getPostsByUser(userId: Types.ObjectId) {
-  return Post.find({ createdBy: userId })
-    .populate("category", "name slug")
+export async function getPostsByUser(userId: string) {
+  return Post.find({
+    createdBy: new Types.ObjectId(userId),
+    isActive: true,
+  })
+    .populate("category", "slug name nameEn")
     .sort({ createdAt: -1 });
 }
 

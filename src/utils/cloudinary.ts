@@ -1,11 +1,14 @@
-import cloudinary from "cloudinary";
+import { v2 as cloudinary } from "cloudinary";
+
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
 
 export function getSignedDownloadUrl(publicId: string) {
-  return cloudinary.v2.utils.private_download_url(
-    publicId,
-    "png",
-    {
-      expires_at: Math.floor(Date.now() / 1000) + 60, 
-    }
-  );
+  return cloudinary.utils.private_download_url(publicId, "png", {
+    type: "upload",
+    expires_at: Math.floor(Date.now() / 1000) + 60 * 5,
+  });
 }

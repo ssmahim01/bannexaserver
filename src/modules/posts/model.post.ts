@@ -71,8 +71,10 @@ const postSchema = new Schema<IPost>(
     },
 
     createdBy: {
-      type: Schema.Types.ObjectId,
+      type: Types.ObjectId,
       ref: "User",
+      index: true,
+      required: true,
     },
 
     isActive: {

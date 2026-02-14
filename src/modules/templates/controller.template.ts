@@ -112,13 +112,13 @@ export async function renderTemplateController(req: Request, res: Response) {
 }
 
 export async function getMyTemplatesController(req: Request, res: Response) {
-  const userId = req?.user?._id;
+  const user = req.user;
 
-  const templates = await templateService.getTemplatesByUser(userId);
+  const templates = await templateService.getTemplatesByUser(user);
+
   res.json({ success: true, data: templates });
 }
 
-// PUT
 export async function updateTemplateController(req: Request, res: Response) {
   const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
 

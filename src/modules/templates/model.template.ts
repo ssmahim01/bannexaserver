@@ -1,4 +1,4 @@
-import { Schema, model } from "mongoose";
+import { Schema, Types, model } from "mongoose";
 import { ITemplate } from "./interface.template";
 
 const templateSchema = new Schema<ITemplate>(
@@ -85,8 +85,10 @@ const templateSchema = new Schema<ITemplate>(
     },
 
     createdBy: {
-      type: Schema.Types.ObjectId,
+      type: Types.ObjectId,
       ref: "User",
+      index: true,
+      required: true,
     },
   },
   {

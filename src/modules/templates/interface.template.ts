@@ -24,7 +24,7 @@ export interface ITemplate {
   cloudinaryPublicId: string;
   isActive: boolean;
 
-  createdBy: Types.ObjectId;
+  createdBy?: Types.ObjectId;
   createdAt?: Date;
   updatedAt?: Date;
 }
