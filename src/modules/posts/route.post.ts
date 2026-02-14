@@ -10,6 +10,7 @@ import {
   getMyPostsController,
   updatePostController,
   deletePostController,
+  getSavedPostsController,
 } from "./controller.post";
 
 import { authMiddleware } from "../../middlewares/auth.middleware";
@@ -24,13 +25,10 @@ router.get("/category/:slug", getPostsByCategoryController);
 router.post("/:id/like", authMiddleware, toggleLikePostController);
 router.post("/:id/share", authMiddleware, sharePostController);
 router.post("/:id/save", authMiddleware, toggleSavePostController);
+router.get("/saved/me", authMiddleware, getSavedPostsController);
 router.put("/:id", authMiddleware, updatePostController);
 router.delete("/:id", authMiddleware, deletePostController);
 
-router.post(
-  "/",
-  authMiddleware,
-  createPostController,
-);
+router.post("/", authMiddleware, createPostController);
 
 export const PostRoutes = router;

@@ -244,6 +244,38 @@ export async function sharePostController(req: Request, res: Response) {
   }
 }
 
+export async function getSavedPostsController(req: Request, res: Response) {
+  try {
+    if (!req.user?._id) {
+      return res.status(401).json({
+        success: false,
+        message: "Authentication required",
+      });
+    }
+
+    const user = await User.findById(req.user._id)
+      .populate({
+        path: "savedPosts",
+        match: { isActive: true },
+        populate: {
+          path: "category",
+          select: "slug name nameEn",
+        },
+      });
+
+    return res.json({
+      success: true,
+      data: user?.savedPosts || [],
+    });
+  } catch (error) {
+    console.error("❌ Get Saved Posts Error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch saved posts",
+    });
+  }
+}
+
 export async function toggleSavePostController(req: Request, res: Response) {
   try {
     // Check authentication

@@ -2,6 +2,7 @@ import { Types } from "mongoose";
 import { Post } from "./model.post";
 import { Category } from "../categories/model.category";
 import { generateSlug } from "../../utils/slug";
+import User from "../users/model.user";
 
 async function generateUniqueSlug(base: string): Promise<string> {
   let slug = base;
@@ -58,6 +59,21 @@ export async function getPostBySlug(slug: string) {
     "category",
     "slug name nameEn",
   );
+}
+
+export async function getSavedPostsByUser(userId: Types.ObjectId) {
+  const user = await User.findById(userId).populate({
+    path: "savedPosts",
+    match: { isActive: true },
+    populate: {
+      path: "category",
+      select: "slug name nameEn",
+    },
+  });
+
+  if (!user) throw new Error("User not found");
+
+  return user.savedPosts;
 }
 
 export async function getPostsByUser(userId: Types.ObjectId) {

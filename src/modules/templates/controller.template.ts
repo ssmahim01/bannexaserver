@@ -9,6 +9,7 @@ import {
 import { getSignedDownloadUrl } from "../../utils/cloudinary";
 import mongoose from "mongoose";
 import { Types } from "mongoose";
+import User from "../users/model.user";
 
 export const getSingleParam = (param: string | string[]) =>
   Array.isArray(param) ? param[0] : param;
@@ -139,102 +140,71 @@ export async function deleteTemplateController(req: Request, res: Response) {
 
 export async function downloadTemplateController(req: Request, res: Response) {
   try {
-    // Check authentication
-    if (!req.user || !req.user._id) {
+    if (!req.user?._id) {
       return res.status(401).json({
         success: false,
         message: "Authentication required",
       });
     }
 
-    const user = req.user;
-    const slug = getSingleParam(req.params.slug);
+    const user = await User.findById(req.user._id);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
 
+    const slug = getSingleParam(req.params.slug);
     if (!slug) {
       return res.status(400).json({
         success: false,
-        error: "Slug parameter is required",
+        message: "Slug required",
       });
     }
 
-    // Try finding by slug first
-    let template = await Template.findOne({ slug });
-
-    // If not found by slug, try by MongoDB ObjectId
-    if (!template && mongoose.Types.ObjectId.isValid(slug)) {
-      template = await Template.findById(slug);
-    }
-
+    const template = await Template.findOne({ slug, isActive: true });
     if (!template) {
       return res.status(404).json({
         success: false,
-        error: "Template not found. Please verify the template URL.",
+        message: "Template not found",
       });
     }
 
-    // Initialize user subscription if not exists
-    if (!user.subscription) {
-      user.subscription = {
-        plan: "free",
-        downloadUsedThisMonth: 0,
-        resetDate: new Date(),
-      };
-    }
-
-    // Initialize user stats if not exists
-    if (!user.stats) {
-      user.stats = {
-        totalDownloads: 0,
-      };
-    }
-
-    // Reset monthly download count if needed
+    // Reset if needed
     resetMonthlyDownloadIfNeeded(user);
 
-    // Get download limit based on plan
-    const limit = getMonthlyLimit(user.subscription.plan || "free");
+    const limit = getMonthlyLimit(user.subscription.plan);
 
-    // Check if user has exceeded download limit
     if (user.subscription.downloadUsedThisMonth >= limit) {
       return res.status(403).json({
         success: false,
         message: "Monthly download limit exceeded",
-        limit: limit,
+        limit,
         used: user.subscription.downloadUsedThisMonth,
-        plan: user.subscription.plan,
       });
     }
 
-    // Increment download counters
     user.subscription.downloadUsedThisMonth += 1;
     user.stats.totalDownloads += 1;
 
-    // Initialize template downloads if not exists
-    if (typeof template.downloads !== "number" || isNaN(template.downloads)) {
-      template.downloads = 0;
-    }
     template.downloads += 1;
 
-    // Save both user and template (use Promise.all for better performance)
     await Promise.all([user.save(), template.save()]);
 
-    // Generate signed Cloudinary URL
     const signedUrl = getSignedDownloadUrl(template?.baseImagePublicId ?? "");
 
     return res.json({
       success: true,
       downloadUrl: signedUrl,
       remaining: limit - user.subscription.downloadUsedThisMonth,
-      limit: limit,
-      templateName: template.title,
-      templateId: template._id,
+      limit,
     });
   } catch (error) {
-    console.error("❌ Download Template Error:", error);
+    console.error("❌ Download Error:", error);
     return res.status(500).json({
       success: false,
-      message: "Failed to download template",
-      error: process.env.NODE_ENV === "development" ? error : undefined,
+      message: "Download failed",
     });
   }
 }
