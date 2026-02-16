@@ -112,9 +112,12 @@ export async function renderTemplateController(req: Request, res: Response) {
 }
 
 export async function getMyTemplatesController(req: Request, res: Response) {
-  const user = req.user;
+  const userId = req.user._id;
 
-  const templates = await templateService.getTemplatesByUser(user);
+  const templates = await Template.find({
+    createdBy: userId,
+    isActive: true,
+  }).populate("category", "slug name nameEn").sort({ createdAt: -1 });
 
   res.json({ success: true, data: templates });
 }

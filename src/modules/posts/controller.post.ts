@@ -35,7 +35,10 @@ export async function getPostController(req: Request, res: Response) {
 export async function getMyPostsController(req: Request, res: Response) {
   const userId = req.user._id;
 
-  const posts = await postService.getPostsByUser(userId);
+  const posts = await Post.find({
+    createdBy: userId,
+    isActive: true,
+  }).populate("category", "slug name nameEn").sort({ createdAt: -1 });
 
   res.json({ success: true, data: posts });
 }
@@ -255,15 +258,14 @@ export async function getSavedPostsController(req: Request, res: Response) {
       });
     }
 
-    const user = await User.findById(req.user._id)
-      .populate({
-        path: "savedPosts",
-        match: { isActive: true },
-        populate: {
-          path: "category",
-          select: "slug name nameEn",
-        },
-      });
+    const user = await User.findById(req.user._id).populate({
+      path: "savedPosts",
+      match: { isActive: true },
+      populate: {
+        path: "category",
+        select: "slug name nameEn",
+      },
+    });
 
     return res.json({
       success: true,

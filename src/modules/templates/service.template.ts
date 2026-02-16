@@ -59,9 +59,9 @@ export async function getTemplateBySlug(slug: string) {
     .populate("createdBy", "fullName");
 }
 
-export async function getTemplatesByUser(user: any) {
+export async function getTemplatesByUser(userId: string) {
   return Template.find({
-    createdBy: new Types.ObjectId(user?._id),
+    createdBy: new Types.ObjectId(userId),
     isActive: true,
   })
     .populate("category", "slug name nameEn")

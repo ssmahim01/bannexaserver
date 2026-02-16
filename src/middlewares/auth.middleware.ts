@@ -16,17 +16,14 @@ export async function authMiddleware(
 ) {
   try {
     const header = req.headers.authorization;
-    let token: string | null = null;
 
-    if (header?.startsWith("Bearer ")) {
-      token = header.split(" ")[1];
-    }
-
-    if (!token) {
+    if (!header?.startsWith("Bearer ")) {
       return res.status(401).json({ error: "Unauthorized: missing token" });
     }
 
-    const decoded: any = jwt.verify(token, config.jwt.accessSecret);
+    const token = header.split(" ")[1];
+
+    const decoded = jwt.verify(token, config.jwt.accessSecret) as JwtPayload;
 
     const user = await User.findById(decoded.id);
     if (!user) {
@@ -42,26 +39,14 @@ export async function authMiddleware(
       return res.status(403).json({ error: "Account inactive" });
     }
 
-    const userObj = user.toObject();
-    const { password, ...userWithoutPassword } = userObj;
+    req.user = user;
 
-    if (!userWithoutPassword.subscription) {
-      userObj.subscription = {
-        plan: "free",
-        isActive: true,
-        downloadUsedThisMonth: 0,
-        downloadResetAt: new Date(),
-      };
-    }
-
-    if (!userObj.savedPosts) userObj.savedPosts = [];
-
-    req.user = userObj as any;
     next();
   } catch (err) {
     return res.status(401).json({ error: "Invalid or expired token" });
   }
 }
+
 
 export function getMonthlyLimit(plan: SubscriptionPlan) {
   return plan === "premium" ? 150 : 2;
