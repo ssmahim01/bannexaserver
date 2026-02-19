@@ -63,16 +63,31 @@ export async function updateOrderStatus(
   await order.save();
 
   if (status === "approved") {
-    await User.findByIdAndUpdate(order.user, {
-      $set: {
-        "subscription.plan": "premium",
-        "subscription.isActive": true,
-        "subscription.startedAt": new Date(),
-        "subscription.expiresAt": new Date(
-          Date.now() + 30 * 24 * 60 * 60 * 1000,
-        ),
-      },
-    });
+    const user = await User.findById(order.user);
+    if (!user) throw new Error("User not found");
+
+    const now = new Date();
+    const currentExpiry = user.subscription?.expiresAt;
+
+    let newStartDate = now;
+    let newExpiryDate: Date;
+
+    if (user.subscription?.isActive && currentExpiry && currentExpiry > now) {
+      newStartDate = user.subscription.startedAt || now;
+      newExpiryDate = new Date(
+        currentExpiry.getTime() + 30 * 24 * 60 * 60 * 1000,
+      );
+    } else {
+      newStartDate = now;
+      newExpiryDate = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+    }
+
+    user.subscription.plan = "premium";
+    user.subscription.isActive = true;
+    user.subscription.startedAt = newStartDate;
+    user.subscription.expiresAt = newExpiryDate;
+
+    await user.save();
   }
 
   return order;

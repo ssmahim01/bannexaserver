@@ -39,6 +39,16 @@ export async function authMiddleware(
       return res.status(403).json({ error: "Account inactive" });
     }
 
+    if (user.subscription?.expiresAt) {
+      const now = new Date();
+
+      if (user.subscription.expiresAt < now) {
+        user.subscription.plan = "free";
+        user.subscription.isActive = false;
+        await user.save();
+      }
+    }
+
     req.user = user;
 
     next();
@@ -46,7 +56,6 @@ export async function authMiddleware(
     return res.status(401).json({ error: "Invalid or expired token" });
   }
 }
-
 
 export function getMonthlyLimit(plan: SubscriptionPlan) {
   return plan === "premium" ? 150 : 2;

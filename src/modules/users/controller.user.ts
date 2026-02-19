@@ -63,7 +63,6 @@ export async function loginController(req: Request, res: Response) {
 export async function oauthGoogleController(req: Request, res: Response) {
   try {
     const { fullName, email, profileImage, providerId } = req.body;
-    const referralCode = req.query.ref as string | undefined;
 
     if (!email || !providerId) {
       return res.status(400).json({ error: "Invalid OAuth payload" });
@@ -78,9 +77,7 @@ export async function oauthGoogleController(req: Request, res: Response) {
         provider: "google",
         providerId,
         role: "customer",
-        referralCode,
         status: USER_STATUS.ACTIVE,
-        isOtpVerified: true,
       })) as any;
       // if (user?.email && user?.fullName) {
       //   sendWelcomeEmail(user?.email, user?.fullName);
