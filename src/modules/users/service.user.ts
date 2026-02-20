@@ -35,11 +35,11 @@ export async function createUser(payload: any) {
 }
 
 export async function findUserByEmail(email: string) {
-  return User.findOne({ email }).select("+password");
+  return User.findOne({ email });
 }
 
 export async function findUserById(userId: string) {
-  return User.findById({_id: userId});
+  return User.findById({ _id: userId });
 }
 
 export async function verifyPassword(user: any, plainPassword: string) {
