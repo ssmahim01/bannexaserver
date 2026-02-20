@@ -7,7 +7,7 @@ export interface IUser {
   // Basic
   fullName: string;
   email: string;
-  password: string;
+  password?: string;
 
   role: UserRole;
   status: UserStatus;
