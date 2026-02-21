@@ -10,7 +10,7 @@ export interface ITemplate {
   canvasWidth: number;
   canvasHeight: number;
     author: {
-    name: string;
+    name?: string;
     avatar?: string | null;
   };
 

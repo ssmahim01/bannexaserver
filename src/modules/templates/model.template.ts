@@ -20,7 +20,7 @@ const templateSchema = new Schema<ITemplate>(
     author: {
       name: {
         type: String,
-        required: true,
+        required: false,
       },
       avatar: {
         type: String,
