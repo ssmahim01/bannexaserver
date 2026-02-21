@@ -8,6 +8,7 @@ interface IEngagement {
 export interface IPost {
   _id: Types.ObjectId;
   slug: string;
+  title: string;
 
   image: string;
   caption: string;

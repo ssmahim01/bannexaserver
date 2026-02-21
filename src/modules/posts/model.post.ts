@@ -16,6 +16,12 @@ const postSchema = new Schema<IPost>(
       required: true,
     },
 
+    title: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+
     caption: {
       type: String,
       required: true,
