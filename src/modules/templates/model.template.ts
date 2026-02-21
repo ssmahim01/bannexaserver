@@ -17,6 +17,17 @@ const templateSchema = new Schema<ITemplate>(
       trim: true,
     },
 
+    author: {
+      name: {
+        type: String,
+        required: true,
+      },
+      avatar: {
+        type: String,
+        default: null,
+      },
+    },
+
     previewImage: {
       type: String,
       required: true,

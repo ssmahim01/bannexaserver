@@ -9,6 +9,10 @@ export interface ITemplate {
 
   canvasWidth: number;
   canvasHeight: number;
+    author: {
+    name: string;
+    avatar?: string | null;
+  };
 
   // layers: {
   //   type: "image" | "text";

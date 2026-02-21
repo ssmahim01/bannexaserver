@@ -44,6 +44,10 @@ export async function createTemplate(payload: any, userId: Types.ObjectId) {
     categoryName: category?.nameEn || category?.name || "Uncategorized",
     previewImage: payload.previewImage,
     canvasWidth: payload.canvasWidth,
+    author: {
+      name: payload.author?.name || "User",
+      avatar: payload.author?.avatar || null,
+    },
     canvasHeight: payload.canvasHeight,
     createdBy: new Types.ObjectId(userId),
   });
