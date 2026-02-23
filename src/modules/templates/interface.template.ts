@@ -6,10 +6,12 @@ export interface ITemplate {
   previewImage: string;
   downloads: number;
   category: Types.ObjectId;
+  post?: Types.ObjectId;
+  uses: number;
 
   canvasWidth: number;
   canvasHeight: number;
-    author: {
+  author: {
     name?: string;
     avatar?: string | null;
   };

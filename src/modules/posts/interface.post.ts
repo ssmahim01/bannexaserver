@@ -19,6 +19,8 @@ export interface IPost {
 
   likedBy: Types.ObjectId[];
   sharedBy: Types.ObjectId[];
+  template?: Types.ObjectId;
+  isTemplateBased: boolean;
 
   isTrending?: boolean;
   isPopular?: boolean;

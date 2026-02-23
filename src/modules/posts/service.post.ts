@@ -51,6 +51,7 @@ export async function createPost(payload: any, userId: string) {
 export async function getAllPosts(filter: any = {}) {
   return Post.find({ isActive: true, ...filter })
     .populate("category", "slug name nameEn")
+    .populate("template", "slug")
     .sort({ createdAt: -1 });
 }
 

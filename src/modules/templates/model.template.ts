@@ -17,6 +17,16 @@ const templateSchema = new Schema<ITemplate>(
       trim: true,
     },
 
+    post: {
+      type: Types.ObjectId,
+      ref: "Post",
+    },
+
+    uses: {
+      type: Number,
+      default: 0,
+    },
+
     author: {
       name: {
         type: String,

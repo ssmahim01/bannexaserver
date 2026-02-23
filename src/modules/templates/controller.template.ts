@@ -6,10 +6,13 @@ import {
   getMonthlyLimit,
   resetMonthlyDownloadIfNeeded,
 } from "../../middlewares/auth.middleware";
-import { getSignedDownloadUrl } from "../../utils/cloudinary";
+import {
+  getSignedDownloadUrl,
+  uploadToCloudinaryBuffer,
+} from "../../utils/cloudinary";
 import mongoose from "mongoose";
-import { Types } from "mongoose";
 import User from "../users/model.user";
+import { Post } from "../posts/model.post";
 
 export const getSingleParam = (param: string | string[]) =>
   Array.isArray(param) ? param[0] : param;
@@ -117,7 +120,9 @@ export async function getMyTemplatesController(req: Request, res: Response) {
   const templates = await Template.find({
     createdBy: userId,
     isActive: true,
-  }).populate("category", "slug name nameEn").sort({ createdAt: -1 });
+  })
+    .populate("category", "slug name nameEn")
+    .sort({ createdAt: -1 });
 
   res.json({ success: true, data: templates });
 }
@@ -159,10 +164,19 @@ export async function downloadTemplateController(req: Request, res: Response) {
     }
 
     const slug = getSingleParam(req.params.slug);
+    const file = req.file;
+    const templateSlug = req.body.templateSlug;
     if (!slug) {
       return res.status(400).json({
         success: false,
         message: "Slug required",
+      });
+    }
+
+    if (!file?.buffer) {
+      return res.status(400).json({
+        success: false,
+        message: "File buffer is required",
       });
     }
 
@@ -193,7 +207,36 @@ export async function downloadTemplateController(req: Request, res: Response) {
 
     template.downloads += 1;
 
-    await Promise.all([user.save(), template.save()]);
+    template.uses += 1;
+    await template.save();
+
+    await user.save();
+
+    const existingPost = await Post.findOne({
+      template: template._id,
+      createdBy: user._id,
+    });
+
+    const uploaded = await uploadToCloudinaryBuffer(file.buffer);
+
+    let createdPost = {} as any;
+
+    if (!existingPost) {
+      createdPost = await Post.create({
+        title: template.title,
+        slug: template.slug || templateSlug,
+        image: uploaded.secure_url,
+        author: {
+          name: user?.fullName || "Admin",
+          avatar: user?.profileImage || null,
+        },
+        caption: "Created using Bannexa Template",
+        category: template.category,
+        createdBy: user._id,
+        template: template._id,
+        isTemplateBased: true,
+      });
+    }
 
     const signedUrl = getSignedDownloadUrl(template?.baseImagePublicId ?? "");
 
@@ -202,6 +245,7 @@ export async function downloadTemplateController(req: Request, res: Response) {
       downloadUrl: signedUrl,
       remaining: limit - user.subscription.downloadUsedThisMonth,
       limit,
+      postSlug: createdPost.slug,
     });
   } catch (error) {
     console.error("❌ Download Error:", error);

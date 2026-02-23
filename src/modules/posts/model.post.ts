@@ -65,6 +65,16 @@ const postSchema = new Schema<IPost>(
       index: true,
     },
 
+    template: {
+      type: Types.ObjectId,
+      ref: "Template",
+    },
+
+    isTemplateBased: {
+      type: Boolean,
+      default: false,
+    },
+
     author: {
       name: {
         type: String,
