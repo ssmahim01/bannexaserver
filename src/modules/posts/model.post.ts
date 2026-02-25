@@ -11,6 +11,12 @@ const postSchema = new Schema<IPost>(
       index: true,
     },
 
+       postSlug: {
+          type: String,
+          required: true,
+          trim: true,
+        },
+
     image: {
       type: String,
       required: true,

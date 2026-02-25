@@ -14,6 +14,18 @@ import mongoose from "mongoose";
 import User from "../users/model.user";
 import { Post } from "../posts/model.post";
 
+async function generateUniquePostSlug(base: string): Promise<string> {
+  let slug = base;
+  let count = 1;
+
+  while (await Post.exists({ slug })) {
+    slug = `${base}-${count}`;
+    count++;
+  }
+
+  return slug;
+}
+
 export const getSingleParam = (param: string | string[]) =>
   Array.isArray(param) ? param[0] : param;
 
@@ -221,10 +233,14 @@ export async function downloadTemplateController(req: Request, res: Response) {
 
     let createdPost = {} as any;
 
+    const baseSlug = `${template.slug}-${Date.now()}`;
+const uniqueSlug = await generateUniquePostSlug(baseSlug);
+
     if (!existingPost) {
       createdPost = await Post.create({
         title: template.title,
-        slug: template.slug || templateSlug,
+        slug: uniqueSlug,
+        postSlug: template.slug || templateSlug,
         image: uploaded.secure_url,
         author: {
           name: user?.fullName || "Admin",
