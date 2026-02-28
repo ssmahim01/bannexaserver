@@ -9,6 +9,7 @@ import {
   deleteTemplateController,
   getPublicTemplates,
   getAllTemplatesAdmin,
+  getTemplatePostsController,
 } from "./controller.template";
 
 import { authMiddleware } from "../../middlewares/auth.middleware";
@@ -34,6 +35,8 @@ router.post(
   upload.single("image"),
   downloadTemplateController,
 );
+
+router.get("/:slug/posts", getTemplatePostsController);
 
 router.put("/:id", authMiddleware, updateTemplateController);
 router.delete("/:id", authMiddleware, deleteTemplateController);

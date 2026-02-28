@@ -53,6 +53,37 @@ export async function createTemplate(payload: any, userId: Types.ObjectId) {
   });
 }
 
+export async function getPostsByTemplateSlug(
+  slug: string,
+  page = 1,
+  limit = 12,
+) {
+  const template = await Template.findOne({ slug, isActive: true });
+
+  if (!template) return { posts: [], total: 0 };
+
+  const skip = (page - 1) * limit;
+
+  const [posts, total] = await Promise.all([
+    Post.find({
+      template: template._id,
+      isActive: true,
+    })
+      .populate("category", "slug name nameEn")
+      .populate("createdBy", "fullName profileImage")
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit),
+
+    Post.countDocuments({
+      template: template._id,
+      isActive: true,
+    }),
+  ]);
+
+  return { posts, total };
+}
+
 export async function getTemplateBySlug(slug: string) {
   return Template.findOne({
     slug,

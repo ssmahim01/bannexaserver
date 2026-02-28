@@ -139,6 +139,36 @@ export async function getMyTemplatesController(req: Request, res: Response) {
   res.json({ success: true, data: templates });
 }
 
+export async function getTemplatePostsController(
+  req: Request,
+  res: Response,
+) {
+  try {
+    const slug = getSingleParam(req.params.slug);
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 12;
+
+    const result = await templateService.getPostsByTemplateSlug(
+      slug,
+      page,
+      limit,
+    );
+
+    return res.json({
+      success: true,
+      data: result.posts,
+      total: result.total,
+      page,
+      limit,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch template posts",
+    });
+  }
+}
+
 export async function updateTemplateController(req: Request, res: Response) {
   const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
 
