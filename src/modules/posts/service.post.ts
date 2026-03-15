@@ -17,7 +17,18 @@ async function generateUniqueSlug(base: string): Promise<string> {
 }
 
 export async function createPost(payload: any, userId: string) {
+  const user = await User.findById(userId);
+
+  if (!user) {
+    throw new Error("User not found");
+  }
+
+  if (user.subscription?.plan !== "premium") {
+    throw new Error("Only premium users can publish posts");
+  }
+
   const category = await Category.findOne({ slug: payload.categorySlug });
+
   if (!category) {
     throw new Error("Invalid category");
   }
@@ -38,8 +49,8 @@ export async function createPost(payload: any, userId: string) {
     category: category._id,
 
     author: {
-      name: payload.author?.name || "Admin",
-      avatar: payload.author?.avatar || null,
+      name: payload.author?.name || user.fullName,
+      avatar: payload.author?.avatar || user.profileImage || null,
     },
 
     createdBy: new Types.ObjectId(userId),
