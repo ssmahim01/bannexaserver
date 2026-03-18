@@ -139,10 +139,7 @@ export async function getMyTemplatesController(req: Request, res: Response) {
   res.json({ success: true, data: templates });
 }
 
-export async function getTemplatePostsController(
-  req: Request,
-  res: Response,
-) {
+export async function getTemplatePostsController(req: Request, res: Response) {
   try {
     const slug = getSingleParam(req.params.slug);
     const page = parseInt(req.query.page as string) || 1;
@@ -264,9 +261,9 @@ export async function downloadTemplateController(req: Request, res: Response) {
     let createdPost = {} as any;
 
     const baseSlug = `${template.slug}-${Date.now()}`;
-const uniqueSlug = await generateUniquePostSlug(baseSlug);
+    const uniqueSlug = await generateUniquePostSlug(baseSlug);
 
-    if (!existingPost) {
+    if (!existingPost && user?.subscription?.plan === "premium") {
       createdPost = await Post.create({
         title: template.title,
         slug: uniqueSlug,
@@ -286,13 +283,20 @@ const uniqueSlug = await generateUniquePostSlug(baseSlug);
 
     const signedUrl = getSignedDownloadUrl(template?.baseImagePublicId ?? "");
 
-    return res.json({
-      success: true,
-      downloadUrl: signedUrl,
-      remaining: limit - user.subscription.downloadUsedThisMonth,
-      limit,
-      postSlug: createdPost.slug,
-    });
+    if (user.subscription.plan !== "premium") {
+      return res.json({
+        success: true,
+        message: "Downloaded (no post for free user)",
+      });
+    } else {
+      return res.json({
+        success: true,
+        downloadUrl: signedUrl,
+        remaining: limit - user.subscription.downloadUsedThisMonth,
+        limit,
+        postSlug: createdPost.slug,
+      });
+    }
   } catch (error) {
     console.error("❌ Download Error:", error);
     return res.status(500).json({
