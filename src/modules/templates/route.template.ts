@@ -20,7 +20,6 @@ import multer from "multer";
 const router = express.Router();
 const upload = multer({ storage: multer.memoryStorage() });
 
-// Register static routes before slug routes so "/me" is not treated as a slug.
 router.get("/me/:id", authMiddleware, getMyTemplateByIdController);
 router.get("/me", authMiddleware, getMyTemplatesController);
 router.get(
