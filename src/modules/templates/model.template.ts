@@ -17,6 +17,12 @@ const templateSchema = new Schema<ITemplate>(
       trim: true,
     },
 
+    categoryName: {
+      type: String,
+      default: "Uncategorized",
+      trim: true,
+    },
+
     post: {
       type: Types.ObjectId,
       ref: "Post",
@@ -66,6 +72,11 @@ const templateSchema = new Schema<ITemplate>(
       ref: "Category",
       required: true,
       index: true,
+    },
+
+    isPremium: {
+      type: Boolean,
+      default: false,
     },
 
     // layers: {

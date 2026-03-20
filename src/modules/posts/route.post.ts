@@ -18,14 +18,15 @@ import { authMiddleware } from "../../middlewares/auth.middleware";
 const router = express.Router();
 
 router.get("/", getPostsController);
-router.get("/:slug", getPostController);
+// Register static routes before slug routes so "/me" is not treated as a slug.
 router.get("/me", authMiddleware, getMyPostsController);
+router.get("/saved/me", authMiddleware, getSavedPostsController);
 router.get("/category/:slug", getPostsByCategoryController);
+router.get("/:slug", getPostController);
 
 router.post("/:id/like", authMiddleware, toggleLikePostController);
 router.post("/:id/share", authMiddleware, sharePostController);
 router.post("/:id/save", authMiddleware, toggleSavePostController);
-router.get("/saved/me", authMiddleware, getSavedPostsController);
 router.put("/:id", authMiddleware, updatePostController);
 router.delete("/:id", authMiddleware, deletePostController);
 

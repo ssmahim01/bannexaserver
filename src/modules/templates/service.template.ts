@@ -4,6 +4,12 @@ import { Post } from "../posts/model.post";
 import { generateSlug } from "../../utils/slug";
 import { Category } from "../categories/model.category";
 
+function createHttpError(statusCode: number, message: string) {
+  const error = new Error(message) as Error & { statusCode?: number };
+  error.statusCode = statusCode;
+  return error;
+}
+
 async function generateUniqueSlug(base: string): Promise<string> {
   let slug = base;
   let count = 1;
@@ -34,7 +40,7 @@ export async function createTemplate(payload: any, userId: Types.ObjectId) {
   const uniqueSlug = await generateUniqueSlug(baseSlug);
   const category = await Category.findOne({ slug: payload.categorySlug });
   if (!category) {
-    throw new Error("Invalid category");
+    throw createHttpError(400, "Invalid category");
   }
 
   return Template.create({
@@ -48,6 +54,7 @@ export async function createTemplate(payload: any, userId: Types.ObjectId) {
       name: payload.author?.name || "User",
       avatar: payload.author?.avatar || null,
     },
+    isPremium: Boolean(payload.isPremium),
     canvasHeight: payload.canvasHeight,
     createdBy: new Types.ObjectId(userId),
   });
@@ -103,24 +110,81 @@ export async function getTemplatesByUser(userId: string) {
     .sort({ createdAt: -1 });
 }
 
-export async function updateTemplate(id: string, payload: any, user: any) {
-  const template = await Template.findById(id);
-  if (!template) throw new Error("Template not found");
+export async function getTemplateByIdForUser(id: string, user: any) {
+  const template = await Template.findOne({
+    _id: id,
+    isActive: true,
+  }).populate("category", "slug name nameEn");
 
-  if (template.createdBy?.toString() !== user._id && user.role !== "admin") {
-    throw new Error("Forbidden");
+  if (!template) {
+    throw createHttpError(404, "Template not found");
   }
 
-  Object.assign(template, payload);
+  const isOwner = template.createdBy?.toString() === user._id?.toString();
+  if (!isOwner && user.role !== "admin") {
+    throw createHttpError(403, "Forbidden");
+  }
+
+  return template;
+}
+
+export async function updateTemplate(id: string, payload: any, user: any) {
+  const template = await Template.findById(id);
+  if (!template) throw createHttpError(404, "Template not found");
+
+  if (template.createdBy?.toString() !== user._id?.toString() && user.role !== "admin") {
+    throw createHttpError(403, "Forbidden");
+  }
+
+  if (typeof payload.title === "string") {
+    template.title = payload.title.trim();
+  }
+
+  if (typeof payload.previewImage === "string" && payload.previewImage.trim()) {
+    template.previewImage = payload.previewImage;
+  }
+
+  if (typeof payload.canvasWidth === "number") {
+    template.canvasWidth = payload.canvasWidth;
+  }
+
+  if (typeof payload.canvasHeight === "number") {
+    template.canvasHeight = payload.canvasHeight;
+  }
+
+  if (typeof payload.isPremium === "boolean") {
+    template.isPremium = payload.isPremium;
+  }
+
+  if (payload.author) {
+    template.author = {
+      name: payload.author?.name || template.author?.name || "User",
+      avatar:
+        payload.author?.avatar === undefined
+          ? template.author?.avatar || null
+          : payload.author.avatar,
+    };
+  }
+
+  if (typeof payload.categorySlug === "string" && payload.categorySlug.trim()) {
+    const category = await Category.findOne({ slug: payload.categorySlug });
+    if (!category) {
+      throw createHttpError(400, "Invalid category");
+    }
+
+    template.category = category._id;
+    template.categoryName = category.nameEn || category.name || "Uncategorized";
+  }
+
   return template.save();
 }
 
 export async function deleteTemplate(id: string, user: any) {
   const template = await Template.findById(id);
-  if (!template) throw new Error("Template not found");
+  if (!template) throw createHttpError(404, "Template not found");
 
-  if (template.createdBy?.toString() !== user._id && user.role !== "admin") {
-    throw new Error("Forbidden");
+  if (template.createdBy?.toString() !== user._id?.toString() && user.role !== "admin") {
+    throw createHttpError(403, "Forbidden");
   }
 
   template.isActive = false;
