@@ -4,10 +4,12 @@ export interface ITemplate {
   slug: string;
   title: string;
   previewImage: string;
+  categoryName?: string;
   downloads: number;
   category: Types.ObjectId;
   post?: Types.ObjectId;
   uses: number;
+  isPremium: boolean;
 
   canvasWidth: number;
   canvasHeight: number;

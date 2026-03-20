@@ -139,6 +139,36 @@ export async function getMyTemplatesController(req: Request, res: Response) {
   res.json({ success: true, data: templates });
 }
 
+export async function getMyTemplateByIdController(req: Request, res: Response) {
+  try {
+    const id = getSingleParam(req.params.id);
+
+    if (!id) {
+      return res.status(400).json({
+        success: false,
+        message: "Template id is required",
+      });
+    }
+
+    const template = await templateService.getTemplateByIdForUser(id, req.user);
+    return res.json({ success: true, data: template });
+  } catch (error) {
+    const statusCode =
+      typeof error === "object" &&
+      error !== null &&
+      "statusCode" in error &&
+      typeof (error as { statusCode?: unknown }).statusCode === "number"
+        ? (error as { statusCode: number }).statusCode
+        : 500;
+
+    return res.status(statusCode).json({
+      success: false,
+      message:
+        error instanceof Error ? error.message : "Failed to fetch template",
+    });
+  }
+}
+
 export async function getTemplatePostsController(req: Request, res: Response) {
   try {
     const slug = getSingleParam(req.params.slug);
@@ -167,14 +197,30 @@ export async function getTemplatePostsController(req: Request, res: Response) {
 }
 
 export async function updateTemplateController(req: Request, res: Response) {
-  const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+  try {
+    const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
 
-  const template = await templateService.updateTemplate(
-    id,
-    req.body,
-    req.user!,
-  );
-  res.json({ success: true, data: template });
+    const template = await templateService.updateTemplate(
+      id,
+      req.body,
+      req.user!,
+    );
+    res.json({ success: true, data: template });
+  } catch (error) {
+    const statusCode =
+      typeof error === "object" &&
+      error !== null &&
+      "statusCode" in error &&
+      typeof (error as { statusCode?: unknown }).statusCode === "number"
+        ? (error as { statusCode: number }).statusCode
+        : 500;
+
+    res.status(statusCode).json({
+      success: false,
+      message:
+        error instanceof Error ? error.message : "Failed to update template",
+    });
+  }
 }
 
 // DELETE
