@@ -4,9 +4,9 @@
   "description": "Bannexa Backend API",
   "author": "SS Mahim",
   "license": "ISC",
-  "main": "dist/server.js",
+  "main": "api/index.ts",
   "engines": {
-    "node": "22.x"
+    "node": "24.x"
   },
   "scripts": {
     "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
