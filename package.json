@@ -4,7 +4,7 @@
   "description": "Bannexa Backend API",
   "author": "SS Mahim",
   "license": "ISC",
-  "main": "index.js",
+  "main": "api/index.js",
   "engines": {
     "node": "24.x"
   },
