@@ -45,6 +45,7 @@ app.get("/", (_, res) => {
   res.send({ message: "🚀 Bannexa server is running..." });
 });
 
+
 app.use(globalErrorHandler);
 app.use(notFound);
 
