@@ -39,7 +39,6 @@ export async function createPost(payload: any, userId: string) {
   const post = await Post.create({
     title: payload.title,
     slug: uniqueSlug,
-    // Manual posts do not come from a template, so their public post slug is the canonical fallback.
     postSlug: uniqueSlug,
     image: payload.imageUrl || payload.image,
     caption: payload.caption,
