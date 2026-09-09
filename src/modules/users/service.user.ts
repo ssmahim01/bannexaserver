@@ -1,12 +1,13 @@
 import bcrypt from "bcrypt";
-import jwt, { SignOptions } from "jsonwebtoken";
+import jwt from "jsonwebtoken";
 import User from "./model.user";
 import config from "../../config/index";
-import { USER_STATUS, USER_ROLES } from "./constant.user";
+import { USER_STATUS, USER_ROLES, SUBSCRIPTION_PLANS } from "./constant.user";
 import { invalidateAllUserTokens } from "../../utils/tokenBlacklist";
 
 export async function createUser(payload: any) {
   const exists = await User.findOne({ email: payload.email });
+
   if (exists) {
     throw new Error("User already exists");
   }
@@ -19,31 +20,38 @@ export async function createUser(payload: any) {
     fullName: payload.fullName,
     email: payload.email,
     password: hashedPassword,
+
     role: payload.role || USER_ROLES.CUSTOMER,
     status: USER_STATUS.ACTIVE,
 
     subscription: {
-      plan: "free",
-      isActive: false,
+      plan: SUBSCRIPTION_PLANS.FREE,
+      isActive: true,
     },
 
     isEmailVerified: payload.isEmailVerified ?? false,
   });
 
   const { password, ...safeUser } = user.toObject();
+
   return safeUser;
 }
 
 export async function findUserByEmail(email: string) {
-  return User.findOne({ email });
+  return User.findOne({
+    email: email.toLowerCase(),
+  });
 }
 
 export async function findUserById(userId: string) {
-  return User.findById({ _id: userId });
+  return User.findById(userId);
 }
 
 export async function verifyPassword(user: any, plainPassword: string) {
-  if (!user?.password) return false;
+  if (!user?.password) {
+    return false;
+  }
+
   return bcrypt.compare(plainPassword, user.password);
 }
 
@@ -66,13 +74,17 @@ export function signTokens(user: {
     expiresIn: config.jwt.refreshExpiresIn,
   });
 
-  return { accessToken, refreshToken };
+  return {
+    accessToken,
+    refreshToken,
+  };
 }
 
 export async function updateUser(userId: string, data: any) {
-  const user = await User.findByIdAndUpdate(userId, data, { new: true }).select(
-    "-password",
-  );
+  const user = await User.findByIdAndUpdate(userId, data, {
+    new: true,
+    runValidators: true,
+  }).select("-password");
 
   return user;
 }
@@ -82,10 +94,13 @@ export async function changeUserPassword(userId: string, newPassword: string) {
 
   await User.findByIdAndUpdate(userId, {
     password: hashed,
-    $inc: { tokenVersion: 1 },
+    $inc: {
+      tokenVersion: 1,
+    },
   });
 
   await invalidateAllUserTokens(userId);
+
   return true;
 }
 
@@ -98,7 +113,10 @@ export async function listUsers(filter: any = {}, skip = 0, limit = 20) {
     .sort({ createdAt: -1 })
     .select("-password");
 
-  return { total, items };
+  return {
+    total,
+    items,
+  };
 }
 
 export async function deleteUser(userId: string) {

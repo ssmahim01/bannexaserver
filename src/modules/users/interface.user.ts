@@ -24,14 +24,22 @@ export interface IUser {
   subscription: {
     plan: SubscriptionPlan;
     isActive: boolean;
-    downloadUsedThisMonth: number
-    downloadResetAt: Date
-    startedAt?: Date;
-    expiresAt?: Date;
+
+    // Banner downloads
+    downloadUsedThisMonth: number;
+    downloadResetAt: Date;
+
+    // AI generations
+    aiGenerationUsedThisMonth: number;
+    aiGenerationResetAt: Date;
+
+    // Subscription period
+    startedAt?: Date | null;
+    expiresAt?: Date | null;
   };
-   savedPosts: Types.ObjectId[];
-   likedPosts: Types.ObjectId[];
-   sharedPosts: Types.ObjectId[];
+  savedPosts: Types.ObjectId[];
+  likedPosts: Types.ObjectId[];
+  sharedPosts: Types.ObjectId[];
 
   // Auth
   isEmailVerified: boolean;

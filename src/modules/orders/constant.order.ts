@@ -6,8 +6,9 @@ export enum OrderStatus {
 }
 
 export enum OrderPlan {
-  FREE = "free",
   PREMIUM = "premium",
+  PROFESSIONAL = "professional",
+  ENTERPRISE = "enterprise",
 }
 
 export enum PaymentChannel {

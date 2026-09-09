@@ -1,15 +1,21 @@
 import mongoose, { Schema, Model } from "mongoose";
 import { IUser } from "./interface.user";
+import { SUBSCRIPTION_PLANS } from "./constant.user";
 
 const userSchema = new Schema<IUser>(
   {
-    fullName: { type: String, required: true, trim: true },
+    fullName: {
+      type: String,
+      required: true,
+      trim: true,
+    },
 
     email: {
       type: String,
       required: true,
       unique: true,
       lowercase: true,
+      trim: true,
       index: true,
     },
 
@@ -21,7 +27,7 @@ const userSchema = new Schema<IUser>(
 
     password: {
       type: String,
-      required: false, 
+      required: false,
     },
 
     role: {
@@ -38,40 +44,86 @@ const userSchema = new Schema<IUser>(
       index: true,
     },
 
+    // Profile
     profileImage: String,
     phone: String,
     country: String,
     city: String,
 
+    // Saved templates/posts
     savedPosts: {
       type: [Schema.Types.ObjectId],
       ref: "Post",
       default: [],
     },
 
+    // Subscription
     subscription: {
       plan: {
         type: String,
-        enum: ["free", "premium"],
-        default: "free",
+        enum: Object.values(SUBSCRIPTION_PLANS),
+        default: SUBSCRIPTION_PLANS.FREE,
       },
+
       isActive: {
         type: Boolean,
         default: true,
       },
+
+      // Banner downloads
       downloadUsedThisMonth: {
         type: Number,
         default: 0,
+        min: 0,
       },
+
       downloadResetAt: {
         type: Date,
-        default: () => new Date(),
+        default: () =>
+          new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1),
+      },
+
+      // AI generations
+      aiGenerationUsedThisMonth: {
+        type: Number,
+        default: 0,
+        min: 0,
+      },
+
+      aiGenerationResetAt: {
+        type: Date,
+        default: () =>
+          new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1),
+      },
+
+      // Subscription period
+      startedAt: {
+        type: Date,
+        default: null,
+      },
+
+      expiresAt: {
+        type: Date,
+        default: null,
       },
     },
 
-    likedPosts: [{ type: Schema.Types.ObjectId, ref: "Post" }],
-    sharedPosts: [{ type: Schema.Types.ObjectId, ref: "Post" }],
+    // Engagement
+    likedPosts: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: "Post",
+      },
+    ],
 
+    sharedPosts: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: "Post",
+      },
+    ],
+
+    // Verification
     isEmailVerified: {
       type: Boolean,
       default: false,
@@ -79,15 +131,31 @@ const userSchema = new Schema<IUser>(
 
     providerId: String,
 
+    // Auth
     tokenVersion: {
       type: Number,
       default: 0,
     },
 
+    // Analytics
     stats: {
-      totalPosts: { type: Number, default: 0 },
-      totalBanners: { type: Number, default: 0 },
-      totalDownloads: { type: Number, default: 0 },
+      totalPosts: {
+        type: Number,
+        default: 0,
+        min: 0,
+      },
+
+      totalBanners: {
+        type: Number,
+        default: 0,
+        min: 0,
+      },
+
+      totalDownloads: {
+        type: Number,
+        default: 0,
+        min: 0,
+      },
     },
   },
   {
@@ -96,6 +164,7 @@ const userSchema = new Schema<IUser>(
   },
 );
 
+// Indexes
 userSchema.index({ email: 1, status: 1 });
 userSchema.index({ "subscription.plan": 1 });
 

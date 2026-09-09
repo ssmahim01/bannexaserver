@@ -5,6 +5,7 @@ import { CategoryRoutes } from "./modules/categories/route.category";
 import { TemplateRoutes } from "./modules/templates/route.template";
 import { OrderRoutes } from "./modules/orders/route.order";
 import { PaymentMethodRoutes } from "./modules/payment-method/route.method";
+import { AIRoutes } from "./modules/ai-images/route.ai-image";
 
 const router = Router();
 
@@ -33,6 +34,7 @@ const moduleRoutes = [
     path: "/payment-methods",
     route: PaymentMethodRoutes,
   },
+  { path: "/ai-images", route: AIRoutes },
 ];
 
 moduleRoutes.forEach((route) => router.use(route.path, route.route));

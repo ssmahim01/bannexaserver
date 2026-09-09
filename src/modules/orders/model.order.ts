@@ -1,10 +1,6 @@
 import { Schema, model } from "mongoose";
 import { IOrder } from "./interface.order";
-import {
-  OrderPlan,
-  OrderStatus,
-  PaymentChannel,
-} from "./constant.order";
+import { OrderPlan, OrderStatus } from "./constant.order";
 
 const orderSchema = new Schema<IOrder>(
   {
@@ -38,12 +34,6 @@ const orderSchema = new Schema<IOrder>(
       required: true,
     },
 
-    // paymentChannel: {
-    //   type: String,
-    //   enum: Object.values(PaymentChannel),
-    //   required: true,
-    // },
-
     transactionId: {
       type: String,
       required: true,
@@ -59,6 +49,7 @@ const orderSchema = new Schema<IOrder>(
       type: String,
       trim: true,
     },
+
     adminNote: {
       type: String,
       trim: true,

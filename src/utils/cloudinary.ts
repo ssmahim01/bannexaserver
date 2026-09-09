@@ -13,13 +13,19 @@ export function getSignedDownloadUrl(publicId: string) {
   });
 }
 
-export function uploadToCloudinaryBuffer(buffer: Buffer) {
+export function uploadToCloudinaryBuffer(
+  buffer: Buffer,
+  folder = "bannexa-posts",
+) {
   return new Promise<any>((resolve, reject) => {
     const stream = cloudinary.uploader.upload_stream(
-      { folder: "bannexa-posts" },
+      { folder },
       (error, result) => {
-        if (error) reject(error);
-        else resolve(result);
+        if (error) {
+          reject(error);
+        } else {
+          resolve(result);
+        }
       },
     );
 
