@@ -77,11 +77,11 @@ function getAIPlanConfiguration(user: any): {
     );
   }
 
-  if (!subscription.isActive) {
-    throw new Error(
-      "Your subscription is inactive",
-    );
-  }
+  // if (!subscription.isActive) {
+  //   throw new Error(
+  //     "Your subscription is inactive",
+  //   );
+  // }
 
   const provider =
     AI_PLAN_PROVIDERS[plan];
