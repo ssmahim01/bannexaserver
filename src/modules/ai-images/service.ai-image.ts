@@ -63,28 +63,42 @@ function getAIPlanConfiguration(user: any): {
   const subscription = user.subscription;
 
   if (!subscription) {
-    throw new Error("Subscription information not found");
+    throw new Error(
+      "Subscription information not found",
+    );
   }
 
-  const plan = subscription.plan as SubscriptionPlan;
+  const plan: SubscriptionPlan =
+    subscription.plan;
 
   if (!plan) {
-    throw new Error("Subscription plan not found");
+    throw new Error(
+      "Subscription plan not found",
+    );
   }
 
   if (!subscription.isActive) {
-    throw new Error("Your subscription is inactive");
+    throw new Error(
+      "Your subscription is inactive",
+    );
   }
-  const provider = AI_PLAN_PROVIDERS[plan];
 
-  const limit = AI_GENERATION_LIMITS[plan];
+  const provider =
+    AI_PLAN_PROVIDERS[plan];
+
+  const limit =
+    AI_GENERATION_LIMITS[plan];
 
   if (!provider) {
-    throw new Error("AI provider is not configured for this plan");
+    throw new Error(
+      "AI provider is not configured for this plan",
+    );
   }
 
   if (typeof limit !== "number") {
-    throw new Error("AI generation limit is not configured for this plan");
+    throw new Error(
+      "AI generation limit is not configured for this plan",
+    );
   }
 
   return {

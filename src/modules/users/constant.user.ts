@@ -6,7 +6,8 @@ export const USER_STATUS = {
   SUSPEND: "suspend",
 } as const;
 
-export type UserStatus = (typeof USER_STATUS)[keyof typeof USER_STATUS];
+export type UserStatus =
+  (typeof USER_STATUS)[keyof typeof USER_STATUS];
 
 export const USER_ROLES = {
   CUSTOMER: "customer",
@@ -15,7 +16,8 @@ export const USER_ROLES = {
   ADMIN: "admin",
 } as const;
 
-export type UserRole = (typeof USER_ROLES)[keyof typeof USER_ROLES];
+export type UserRole =
+  (typeof USER_ROLES)[keyof typeof USER_ROLES];
 
 export const SUBSCRIPTION_PLANS = {
   FREE: "free",
