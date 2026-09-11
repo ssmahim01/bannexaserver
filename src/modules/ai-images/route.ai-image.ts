@@ -2,10 +2,16 @@ import { Router } from "express";
 
 import { authMiddleware } from "../../middlewares/auth.middleware";
 
-import { generateAIImageController } from "./controller.ai-image";
+import { generateAIImageController, getAIUsageController } from "./controller.ai-image";
 import { uploadImage } from "../../middlewares/uploadImage";
 
 const router = Router();
+
+router.get(
+  "/usage",
+  authMiddleware,
+  getAIUsageController,
+);
 
 router.post(
   "/generate",

@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 
 import { generateAIImageValidation } from "./validation.ai-image";
 import { generateAIImage } from "./service.ai-image";
+import { getAIUsage } from "./service.ai-image";
 
 export async function generateAIImageController(req: Request, res: Response) {
   try {
@@ -105,6 +106,61 @@ export async function generateAIImageController(req: Request, res: Response) {
     return res.status(500).json({
       success: false,
       message: "Something went wrong while generating the image",
+    });
+  }
+}
+
+
+export async function getAIUsageController(
+  req: Request,
+  res: Response
+) {
+  try {
+    if (!req.user?._id) {
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized",
+      });
+    }
+
+    const usage = await getAIUsage(
+      req.user._id.toString()
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: "AI usage fetched successfully",
+      data: usage,
+    });
+  } catch (error: unknown) {
+    console.error("Get AI usage error:", error);
+
+    const message =
+      error instanceof Error
+        ? error.message
+        : "Unable to fetch AI usage";
+
+    if (message === "User not found") {
+      return res.status(404).json({
+        success: false,
+        message,
+      });
+    }
+
+    if (
+      message === "Subscription information not found" ||
+      message ===
+        "AI generation limit is not configured for this plan"
+    ) {
+      return res.status(400).json({
+        success: false,
+        message,
+      });
+    }
+
+    return res.status(500).json({
+      success: false,
+      message: "Unable to fetch AI usage",
     });
   }
 }

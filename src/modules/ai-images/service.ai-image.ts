@@ -55,6 +55,57 @@ function resetMonthlyAIUsageIfNeeded(user: any): void {
   }
 }
 
+export async function getAIUsage(userId: string) {
+  const user = await User.findById(userId).select(
+    "subscription"
+  );
+
+  if (!user) {
+    throw new Error("User not found");
+  }
+
+  if (!user.subscription) {
+    throw new Error("Subscription information not found");
+  }
+
+  const plan = user.subscription.plan as SubscriptionPlan;
+
+  const limit = AI_GENERATION_LIMITS[plan];
+
+  if (limit === undefined) {
+    throw new Error(
+      "AI generation limit is not configured for this plan"
+    );
+  }
+
+  const now = new Date();
+
+  if (
+    !user.subscription.aiGenerationResetAt ||
+    now >= user.subscription.aiGenerationResetAt
+  ) {
+    user.subscription.aiGenerationUsedThisMonth = 0;
+
+    user.subscription.aiGenerationResetAt = new Date(
+      now.getFullYear(),
+      now.getMonth() + 1,
+      1
+    );
+
+    await user.save();
+  }
+
+  const used = user.subscription.aiGenerationUsedThisMonth;
+
+  return {
+    plan,
+    used,
+    limit,
+    remaining: Math.max(0, limit - used),
+    resetAt: user.subscription.aiGenerationResetAt,
+  };
+}
+
 function getAIPlanConfiguration(user: any): {
   plan: SubscriptionPlan;
   provider: AIProvider;
