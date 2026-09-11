@@ -1,10 +1,4 @@
-export const AI_PROVIDERS = {
-  GEMINI: "gemini",
-  OPENAI: "openai",
-} as const;
-
-export type AIProvider =
-  (typeof AI_PROVIDERS)[keyof typeof AI_PROVIDERS];
+import { SubscriptionPlan } from "../users/constant.user";
 
 export const AI_CATEGORIES = {
   ACTOR_VIBE: "actor-vibe",
@@ -26,33 +20,90 @@ export const AI_GENERATION_STATUS = {
 export type AIGenerationStatus =
   (typeof AI_GENERATION_STATUS)[keyof typeof AI_GENERATION_STATUS];
 
-export const AI_GENERATION_LIMITS = {
+export const AI_PROVIDERS = {
+  HUGGINGFACE: "huggingface",
+  GEMINI: "gemini",
+  OPENAI: "openai",
+} as const;
+
+export type AIProvider =
+  (typeof AI_PROVIDERS)[keyof typeof AI_PROVIDERS];
+
+export const AI_PLAN_PROVIDERS: Record<
+  SubscriptionPlan,
+  AIProvider
+> = {
+  free: AI_PROVIDERS.HUGGINGFACE,
+  premium: AI_PROVIDERS.GEMINI,
+  professional: AI_PROVIDERS.OPENAI,
+  enterprise: AI_PROVIDERS.OPENAI,
+};
+
+export const AI_GENERATION_LIMITS: Record<
+  SubscriptionPlan,
+  number
+> = {
   free: 2,
   premium: 30,
   professional: 100,
   enterprise: 500,
-} as const;
-
-export const AI_PLAN_PROVIDERS = {
-  free: AI_PROVIDERS.GEMINI,
-  premium: AI_PROVIDERS.OPENAI,
-  professional: AI_PROVIDERS.OPENAI,
-  enterprise: AI_PROVIDERS.OPENAI,
-} as const;
+};
 
 export const AI_PROMPTS: Record<AIImageCategory, string> = {
-  "actor-vibe":
-    "Transform the provided person's photo into a cinematic celebrity-inspired portrait. Preserve the person's recognizable identity, facial structure, skin tone, and natural appearance while applying a sophisticated cinematic visual style.",
+  "actor-vibe": `
+Transform the uploaded portrait into a sophisticated cinematic actor-style portrait.
 
-  enhance:
-    "Professionally enhance the provided image. Improve clarity, lighting, sharpness, dynamic range and overall visual quality while preserving the original person's identity and natural appearance.",
+Preserve the exact identity of the person in the reference image.
+Maintain the same facial structure, facial proportions, eyes, nose, lips,
+jawline, hairstyle characteristics, skin tone, age, and recognizable identity.
 
-  cinematic:
-    "Transform the provided photo into a high-quality cinematic portrait with dramatic professional lighting, realistic skin texture, depth and a polished cinematic atmosphere while preserving the person's identity.",
+Do not replace the person with another person.
+Do not create a different face.
 
-  professional:
-    "Transform the provided photo into a professional studio portrait with clean lighting, realistic details, polished composition and natural skin tones while preserving the person's identity.",
+Only transform the visual styling, lighting, clothing, atmosphere,
+background and cinematic presentation.
 
-  anime:
-    "Transform the provided photo into a high-quality anime-inspired artistic portrait while preserving recognizable facial characteristics, pose and overall composition.",
+Photorealistic result, natural skin texture, realistic facial details.
+`,
+
+  enhance: `
+Professionally enhance the uploaded photograph.
+
+Preserve the exact person and facial identity.
+Do not alter the person's facial structure or recognizable features.
+
+Improve lighting, sharpness, clarity, dynamic range, skin detail
+and overall photographic quality while keeping the original person intact.
+`,
+
+  cinematic: `
+Transform the uploaded portrait into a premium cinematic photograph.
+
+Keep the exact same person and preserve their recognizable facial identity,
+facial proportions, eyes, nose, lips, jawline and natural appearance.
+
+Change primarily the lighting, atmosphere, color grading,
+depth and cinematic environment.
+
+Photorealistic result with natural skin texture.
+`,
+
+  professional: `
+Transform the uploaded portrait into a premium professional studio portrait.
+
+Preserve the exact identity and facial characteristics of the person.
+Do not replace or redesign the face.
+
+Use professional studio lighting, clean composition,
+natural skin tones and polished photographic quality.
+`,
+
+  anime: `
+Transform the uploaded portrait into a high-quality anime-inspired
+artistic portrait while retaining the recognizable identity,
+facial proportions, pose and overall composition of the person.
+
+Do not replace the person with a completely different character.
+`,
 };
+

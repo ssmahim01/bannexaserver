@@ -19,6 +19,7 @@ import { GenerateAIImagePayload, GeneratedAIImage } from "./interface.ai-image";
 import { uploadToCloudinaryBuffer } from "../../utils/cloudinary";
 
 import { SubscriptionPlan } from "../users/constant.user";
+import { generateWithHuggingFace } from "./providers/huggingface.provider";
 
 const GEMINI_IMAGE_MODEL =
   process.env.GEMINI_IMAGE_MODEL || "gemini-2.5-flash-image";
@@ -37,7 +38,7 @@ const openai = process.env.OPENAI_API_KEY
     })
   : null;
 
-function resetMonthlyAIUsageIfNeeded(user: any): void {
+async function resetMonthlyAIUsageIfNeeded(user: any): Promise<void> {
   const now = new Date();
 
   const resetAt = user.subscription?.aiGenerationResetAt
@@ -52,13 +53,13 @@ function resetMonthlyAIUsageIfNeeded(user: any): void {
       now.getMonth() + 1,
       1,
     );
+
+    await user.save();
   }
 }
 
 export async function getAIUsage(userId: string) {
-  const user = await User.findById(userId).select(
-    "subscription"
-  );
+  const user = await User.findById(userId).select("subscription");
 
   if (!user) {
     throw new Error("User not found");
@@ -73,9 +74,7 @@ export async function getAIUsage(userId: string) {
   const limit = AI_GENERATION_LIMITS[plan];
 
   if (limit === undefined) {
-    throw new Error(
-      "AI generation limit is not configured for this plan"
-    );
+    throw new Error("AI generation limit is not configured for this plan");
   }
 
   const now = new Date();
@@ -89,7 +88,7 @@ export async function getAIUsage(userId: string) {
     user.subscription.aiGenerationResetAt = new Date(
       now.getFullYear(),
       now.getMonth() + 1,
-      1
+      1,
     );
 
     await user.save();
@@ -114,18 +113,13 @@ function getAIPlanConfiguration(user: any): {
   const subscription = user.subscription;
 
   if (!subscription) {
-    throw new Error(
-      "Subscription information not found",
-    );
+    throw new Error("Subscription information not found");
   }
 
-  const plan: SubscriptionPlan =
-    subscription.plan;
+  const plan: SubscriptionPlan = subscription.plan;
 
   if (!plan) {
-    throw new Error(
-      "Subscription plan not found",
-    );
+    throw new Error("Subscription plan not found");
   }
 
   // if (!subscription.isActive) {
@@ -134,22 +128,16 @@ function getAIPlanConfiguration(user: any): {
   //   );
   // }
 
-  const provider =
-    AI_PLAN_PROVIDERS[plan];
+  const provider = AI_PLAN_PROVIDERS[plan];
 
-  const limit =
-    AI_GENERATION_LIMITS[plan];
+  const limit = AI_GENERATION_LIMITS[plan];
 
   if (!provider) {
-    throw new Error(
-      "AI provider is not configured for this plan",
-    );
+    throw new Error("AI provider is not configured for this plan");
   }
 
   if (typeof limit !== "number") {
-    throw new Error(
-      "AI generation limit is not configured for this plan",
-    );
+    throw new Error("AI generation limit is not configured for this plan");
   }
 
   return {
@@ -166,7 +154,16 @@ function getAIPrompt(category: AIImageCategory): string {
     throw new Error("Invalid AI generation category");
   }
 
-  return prompt;
+  return `
+${prompt}
+
+Create a high-quality, visually polished image.
+Professional composition.
+Realistic details.
+Premium lighting.
+High visual quality.
+Suitable for a professional design platform.
+`;
 }
 
 async function generateWithGemini(
@@ -294,14 +291,31 @@ async function generateImageByProvider(
   prompt: string,
 ): Promise<GeneratedAIImage> {
   switch (provider) {
+    case AI_PROVIDERS.HUGGINGFACE:
+      return generateWithHuggingFace({
+        imageBuffer,
+        mimeType,
+        prompt,
+      });
+
     case AI_PROVIDERS.GEMINI:
-      return generateWithGemini(imageBuffer, mimeType, prompt);
+      return generateWithGemini(
+        imageBuffer,
+        mimeType,
+        prompt,
+      );
 
     case AI_PROVIDERS.OPENAI:
-      return generateWithOpenAI(imageBuffer, mimeType, prompt);
+      return generateWithOpenAI(
+        imageBuffer,
+        mimeType,
+        prompt,
+      );
 
     default:
-      throw new Error(`Unsupported AI provider: ${provider}`);
+      throw new Error(
+        `Unsupported AI provider: ${provider}`,
+      );
   }
 }
 
@@ -333,7 +347,7 @@ export async function generateAIImage(payload: GenerateAIImagePayload) {
     throw new Error("Your account is not allowed to use AI");
   }
 
-  resetMonthlyAIUsageIfNeeded(user);
+  await resetMonthlyAIUsageIfNeeded(user);
 
   const { plan, provider, limit } = getAIPlanConfiguration(user);
 
@@ -382,19 +396,12 @@ export async function generateAIImage(payload: GenerateAIImagePayload) {
   try {
     aiImage = await AIImage.create({
       user: user._id,
-
       category,
-
       provider: generated.provider,
-
       model: generated.model,
-
       image: cloudinaryResult.secure_url,
-
       cloudinaryPublicId: cloudinaryResult.public_id,
-
       status: AI_GENERATION_STATUS.COMPLETED,
-
       errorMessage: null,
     });
   } catch (error: unknown) {
