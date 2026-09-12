@@ -1,17 +1,13 @@
-import { GoogleGenAI } from "@google/genai";
-import OpenAI from "openai";
-
 import User from "../users/model.user";
 import AIImage from "./model.ai-image";
 
 import {
   AI_GENERATION_LIMITS,
   AI_GENERATION_STATUS,
-  AI_PLAN_PROVIDERS,
   AI_PROVIDERS,
-  AI_PROMPTS,
   AIImageCategory,
   AIProvider,
+  AI_PLAN_MODELS,
 } from "./constant.ai-image";
 
 import { GenerateAIImagePayload, GeneratedAIImage } from "./interface.ai-image";
@@ -19,24 +15,12 @@ import { GenerateAIImagePayload, GeneratedAIImage } from "./interface.ai-image";
 import { uploadToCloudinaryBuffer } from "../../utils/cloudinary";
 
 import { SubscriptionPlan } from "../users/constant.user";
-import { generateWithHuggingFace } from "./providers/huggingface.provider";
 
-const GEMINI_IMAGE_MODEL =
-  process.env.GEMINI_IMAGE_MODEL || "gemini-2.5-flash-image";
+import { generateWithOpenRouter } from "./providers/openrouter.provider";
 
-const OPENAI_IMAGE_MODEL = process.env.OPENAI_IMAGE_MODEL || "gpt-image-2";
+import { IUser } from "../users/interface.user";
 
-const gemini = process.env.GEMINI_API_KEY
-  ? new GoogleGenAI({
-      apiKey: process.env.GEMINI_API_KEY,
-    })
-  : null;
-
-const openai = process.env.OPENAI_API_KEY
-  ? new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY,
-    })
-  : null;
+import { AI_PROMPTS } from "./prompt.ai-image";
 
 async function resetMonthlyAIUsageIfNeeded(user: any): Promise<void> {
   const now = new Date();
@@ -94,7 +78,7 @@ export async function getAIUsage(userId: string) {
     await user.save();
   }
 
-  const used = user.subscription.aiGenerationUsedThisMonth;
+  const used = user.subscription.aiGenerationUsedThisMonth ?? 0;
 
   return {
     plan,
@@ -105,44 +89,28 @@ export async function getAIUsage(userId: string) {
   };
 }
 
-function getAIPlanConfiguration(user: any): {
-  plan: SubscriptionPlan;
-  provider: AIProvider;
-  limit: number;
-} {
-  const subscription = user.subscription;
+function getAIPlanConfiguration(user: IUser) {
+  const plan = user.subscription.plan;
 
-  if (!subscription) {
-    throw new Error("Subscription information not found");
+  const model = AI_PLAN_MODELS[plan];
+
+  if (!model) {
+    throw new Error(`AI model is not configured for plan: ${plan}`);
   }
-
-  const plan: SubscriptionPlan = subscription.plan;
-
-  if (!plan) {
-    throw new Error("Subscription plan not found");
-  }
-
-  // if (!subscription.isActive) {
-  //   throw new Error(
-  //     "Your subscription is inactive",
-  //   );
-  // }
-
-  const provider = AI_PLAN_PROVIDERS[plan];
 
   const limit = AI_GENERATION_LIMITS[plan];
 
-  if (!provider) {
-    throw new Error("AI provider is not configured for this plan");
-  }
-
-  if (typeof limit !== "number") {
+  if (limit === undefined) {
     throw new Error("AI generation limit is not configured for this plan");
   }
 
   return {
     plan,
-    provider,
+
+    provider: AI_PROVIDERS.OPENROUTER,
+
+    model,
+
     limit,
   };
 }
@@ -163,164 +131,39 @@ Realistic details.
 Premium lighting.
 High visual quality.
 Suitable for a professional design platform.
+
+IMPORTANT:
+Use the uploaded image as the primary reference.
+Preserve the identity and recognizable characteristics
+of the person in the uploaded image.
+Do not replace the person with a different person.
 `;
-}
-
-async function generateWithGemini(
-  imageBuffer: Buffer,
-  mimeType: string,
-  prompt: string,
-): Promise<GeneratedAIImage> {
-  if (!gemini) {
-    throw new Error("Gemini API is not configured");
-  }
-
-  const base64Image = imageBuffer.toString("base64");
-
-  const response = await gemini.models.generateContent({
-    model: GEMINI_IMAGE_MODEL,
-
-    contents: [
-      {
-        role: "user",
-
-        parts: [
-          {
-            text: prompt,
-          },
-
-          {
-            inlineData: {
-              mimeType,
-              data: base64Image,
-            },
-          },
-        ],
-      },
-    ],
-
-    config: {
-      responseModalities: ["IMAGE"],
-    },
-  });
-
-  const parts = response.candidates?.[0]?.content?.parts ?? [];
-
-  const imagePart = parts.find((part) => !!part.inlineData?.data);
-
-  if (!imagePart?.inlineData?.data) {
-    throw new Error("Gemini did not return a generated image");
-  }
-
-  return {
-    buffer: Buffer.from(imagePart.inlineData.data, "base64"),
-
-    provider: AI_PROVIDERS.GEMINI,
-
-    model: GEMINI_IMAGE_MODEL,
-  };
-}
-
-async function generateWithOpenAI(
-  imageBuffer: Buffer,
-  mimeType: string,
-  prompt: string,
-): Promise<GeneratedAIImage> {
-  if (!openai) {
-    throw new Error("OpenAI API is not configured");
-  }
-
-  const extension = getExtensionFromMimeType(mimeType);
-  const arrayBuffer = imageBuffer.buffer.slice(
-    imageBuffer.byteOffset,
-    imageBuffer.byteOffset + imageBuffer.byteLength,
-  ) as ArrayBuffer;
-
-  const imageFile = new File([arrayBuffer], `bannexa-input.${extension}`, {
-    type: mimeType,
-  });
-
-  const response = await openai.images.edit({
-    model: OPENAI_IMAGE_MODEL,
-
-    image: imageFile,
-
-    prompt,
-
-    size: "1024x1024",
-  });
-
-  const base64Image = response.data?.[0]?.b64_json;
-
-  if (!base64Image) {
-    throw new Error("OpenAI did not return a generated image");
-  }
-
-  return {
-    buffer: Buffer.from(base64Image, "base64"),
-
-    provider: AI_PROVIDERS.OPENAI,
-
-    model: OPENAI_IMAGE_MODEL,
-  };
-}
-
-function getExtensionFromMimeType(mimeType: string): string {
-  switch (mimeType) {
-    case "image/jpeg":
-      return "jpg";
-
-    case "image/png":
-      return "png";
-
-    case "image/webp":
-      return "webp";
-
-    case "image/gif":
-      return "gif";
-
-    default:
-      return "png";
-  }
 }
 
 async function generateImageByProvider(
   provider: AIProvider,
+  model: string,
   imageBuffer: Buffer,
   mimeType: string,
   prompt: string,
 ): Promise<GeneratedAIImage> {
   switch (provider) {
-    case AI_PROVIDERS.HUGGINGFACE:
-      return generateWithHuggingFace({
+    case AI_PROVIDERS.OPENROUTER:
+      return generateWithOpenRouter({
         imageBuffer,
         mimeType,
         prompt,
+        model,
       });
 
-    case AI_PROVIDERS.GEMINI:
-      return generateWithGemini(
-        imageBuffer,
-        mimeType,
-        prompt,
-      );
-
-    case AI_PROVIDERS.OPENAI:
-      return generateWithOpenAI(
-        imageBuffer,
-        mimeType,
-        prompt,
-      );
-
     default:
-      throw new Error(
-        `Unsupported AI provider: ${provider}`,
-      );
+      throw new Error(`Unsupported AI provider: ${provider}`);
   }
 }
 
 export async function generateAIImage(payload: GenerateAIImagePayload) {
   const { userId, category, imageBuffer, mimeType } = payload;
+
   if (!userId) {
     throw new Error("User ID is required");
   }
@@ -349,7 +192,7 @@ export async function generateAIImage(payload: GenerateAIImagePayload) {
 
   await resetMonthlyAIUsageIfNeeded(user);
 
-  const { plan, provider, limit } = getAIPlanConfiguration(user);
+  const { plan, provider, model, limit } = getAIPlanConfiguration(user);
 
   const used = user.subscription.aiGenerationUsedThisMonth ?? 0;
 
@@ -359,13 +202,14 @@ export async function generateAIImage(payload: GenerateAIImagePayload) {
     );
   }
 
-  const prompt = getAIPrompt(category);
+  const prompt = getAIPrompt(category as AIImageCategory);
 
   let generated: GeneratedAIImage;
 
   try {
     generated = await generateImageByProvider(
       provider,
+      model,
       imageBuffer,
       mimeType,
       prompt,
@@ -391,21 +235,28 @@ export async function generateAIImage(payload: GenerateAIImagePayload) {
 
     throw new Error("Generated image could not be saved");
   }
+
   let aiImage;
 
   try {
     aiImage = await AIImage.create({
       user: user._id,
+
       category,
+
       provider: generated.provider,
+
       model: generated.model,
+
       image: cloudinaryResult.secure_url,
+
       cloudinaryPublicId: cloudinaryResult.public_id,
+
       status: AI_GENERATION_STATUS.COMPLETED,
-      errorMessage: null,
     });
   } catch (error: unknown) {
     console.error("AI image database error:", error);
+
     try {
       if (cloudinaryResult?.public_id) {
         const cloudinary = await import("../../config/cloudinary");

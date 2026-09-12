@@ -1,7 +1,6 @@
 import { Types } from "mongoose";
 import {
   AIImageCategory,
-  AIGenerationStatus,
   AIProvider,
 } from "./constant.ai-image";
 
@@ -22,7 +21,7 @@ export interface IAIImage {
   cloudinaryPublicId: string;
 
   // Generation status
-  status: AIGenerationStatus;
+  status: string;
 
   // Error information
   errorMessage?: string | null;

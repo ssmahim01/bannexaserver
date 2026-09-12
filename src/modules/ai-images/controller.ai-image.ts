@@ -1,8 +1,7 @@
 import { Request, Response } from "express";
 
 import { generateAIImageValidation } from "./validation.ai-image";
-import { generateAIImage } from "./service.ai-image";
-import { getAIUsage } from "./service.ai-image";
+import { generateAIImage, getAIUsage } from "./service.ai-image";
 
 export async function generateAIImageController(req: Request, res: Response) {
   try {
@@ -66,7 +65,7 @@ export async function generateAIImageController(req: Request, res: Response) {
       "Only image files are allowed",
     ];
 
-    if (badRequestMessages.some((item) => message === item)) {
+    if (badRequestMessages.includes(message)) {
       return res.status(400).json({
         success: false,
         message,
@@ -95,14 +94,16 @@ export async function generateAIImageController(req: Request, res: Response) {
     }
 
     if (
-      message.includes("AI image generation failed") ||
-      message.includes("did not return a generated image")
+      message.includes("OpenRouter image generation failed") ||
+      message.includes("OpenRouter did not return") ||
+      message.includes("AI image generation failed")
     ) {
       return res.status(502).json({
         success: false,
         message: "AI image generation failed. Please try again.",
       });
     }
+
     return res.status(500).json({
       success: false,
       message: "Something went wrong while generating the image",
@@ -110,11 +111,7 @@ export async function generateAIImageController(req: Request, res: Response) {
   }
 }
 
-
-export async function getAIUsageController(
-  req: Request,
-  res: Response
-) {
+export async function getAIUsageController(req: Request, res: Response) {
   try {
     if (!req.user?._id) {
       return res.status(401).json({
@@ -123,9 +120,7 @@ export async function getAIUsageController(
       });
     }
 
-    const usage = await getAIUsage(
-      req.user._id.toString()
-    );
+    const usage = await getAIUsage(req.user._id.toString());
 
     return res.status(200).json({
       success: true,
@@ -136,9 +131,7 @@ export async function getAIUsageController(
     console.error("Get AI usage error:", error);
 
     const message =
-      error instanceof Error
-        ? error.message
-        : "Unable to fetch AI usage";
+      error instanceof Error ? error.message : "Unable to fetch AI usage";
 
     if (message === "User not found") {
       return res.status(404).json({
@@ -149,8 +142,7 @@ export async function getAIUsageController(
 
     if (
       message === "Subscription information not found" ||
-      message ===
-        "AI generation limit is not configured for this plan"
+      message === "AI generation limit is not configured for this plan"
     ) {
       return res.status(400).json({
         success: false,
