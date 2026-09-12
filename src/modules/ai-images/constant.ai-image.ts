@@ -110,6 +110,7 @@
 import { SubscriptionPlan } from "../users/constant.user";
 
 export const AI_PROVIDERS = {
+  HUGGINGFACE: "huggingface",
   OPENROUTER: "openrouter",
 } as const;
 
@@ -117,9 +118,19 @@ export type AIProvider =
   (typeof AI_PROVIDERS)[keyof typeof AI_PROVIDERS];
 
 export const AI_MODELS = {
-  FREE: "x-ai/grok-imagine-image-quality:free",
+  FREE: "Qwen/Qwen-Image-Edit",
   PAID: "bytedance-seed/seedream-5-0-pro",
 } as const;
+
+export const AI_PLAN_PROVIDERS: Record<
+  SubscriptionPlan,
+  AIProvider
+> = {
+  free: AI_PROVIDERS.HUGGINGFACE,
+  premium: AI_PROVIDERS.OPENROUTER,
+  professional: AI_PROVIDERS.OPENROUTER,
+  enterprise: AI_PROVIDERS.OPENROUTER,
+};
 
 export const AI_PLAN_MODELS: Record<
   SubscriptionPlan,

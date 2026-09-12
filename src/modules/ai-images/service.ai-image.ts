@@ -8,6 +8,7 @@ import {
   AIImageCategory,
   AIProvider,
   AI_PLAN_MODELS,
+  AI_PLAN_PROVIDERS,
 } from "./constant.ai-image";
 
 import { GenerateAIImagePayload, GeneratedAIImage } from "./interface.ai-image";
@@ -21,6 +22,7 @@ import { generateWithOpenRouter } from "./providers/openrouter.provider";
 import { IUser } from "../users/interface.user";
 
 import { AI_PROMPTS } from "./prompt.ai-image";
+import { generateWithHuggingFace } from "./providers/huggingface.provider";
 
 async function resetMonthlyAIUsageIfNeeded(user: any): Promise<void> {
   const now = new Date();
@@ -92,25 +94,32 @@ export async function getAIUsage(userId: string) {
 function getAIPlanConfiguration(user: IUser) {
   const plan = user.subscription.plan;
 
+  const provider = AI_PLAN_PROVIDERS[plan];
   const model = AI_PLAN_MODELS[plan];
-
-  if (!model) {
-    throw new Error(`AI model is not configured for plan: ${plan}`);
-  }
-
   const limit = AI_GENERATION_LIMITS[plan];
 
+  if (!provider) {
+    throw new Error(
+      "AI provider is not configured for this plan",
+    );
+  }
+
+  if (!model) {
+    throw new Error(
+      "AI model is not configured for this plan",
+    );
+  }
+
   if (limit === undefined) {
-    throw new Error("AI generation limit is not configured for this plan");
+    throw new Error(
+      "AI generation limit is not configured for this plan",
+    );
   }
 
   return {
     plan,
-
-    provider: AI_PROVIDERS.OPENROUTER,
-
+    provider,
     model,
-
     limit,
   };
 }
@@ -148,6 +157,13 @@ async function generateImageByProvider(
   prompt: string,
 ): Promise<GeneratedAIImage> {
   switch (provider) {
+    case AI_PROVIDERS.HUGGINGFACE:
+      return generateWithHuggingFace({
+        imageBuffer,
+        mimeType,
+        prompt,
+      });
+
     case AI_PROVIDERS.OPENROUTER:
       return generateWithOpenRouter({
         imageBuffer,
@@ -157,7 +173,9 @@ async function generateImageByProvider(
       });
 
     default:
-      throw new Error(`Unsupported AI provider: ${provider}`);
+      throw new Error(
+        `Unsupported AI provider: ${provider}`,
+      );
   }
 }
 

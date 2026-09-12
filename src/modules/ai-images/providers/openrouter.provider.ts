@@ -7,7 +7,7 @@ interface GenerateWithOpenRouterParams {
   model: string;
 }
 
-export interface GeneratedAIImage {
+export interface GeneratedOpenRouterImage {
   buffer: Buffer;
   provider: AIProvider;
   model: string;
@@ -25,11 +25,13 @@ export async function generateWithOpenRouter({
   mimeType,
   prompt,
   model,
-}: GenerateWithOpenRouterParams): Promise<GeneratedAIImage> {
+}: GenerateWithOpenRouterParams): Promise<GeneratedOpenRouterImage> {
   const apiKey = process.env.OPENROUTER_API_KEY;
 
   if (!apiKey) {
-    throw new Error("OpenRouter API is not configured");
+    throw new Error(
+      "OpenRouter API is not configured",
+    );
   }
 
   if (!imageBuffer?.length) {
@@ -68,7 +70,12 @@ export async function generateWithOpenRouter({
           prompt: prompt.trim(),
 
           input_references: [
-            imageDataUrl,
+            {
+              type: "image_url",
+              image_url: {
+                url: imageDataUrl,
+              },
+            },
           ],
 
           resolution: "1K",
