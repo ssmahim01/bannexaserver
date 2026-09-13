@@ -2,14 +2,12 @@ import { Order } from "./model.order";
 import { PaymentMethod } from "../payment-method/model.method";
 import { Types } from "mongoose";
 import User from "../users/model.user";
-import {
-  OrderPlan,
-  OrderStatus,
-} from "./constant.order";
+import { OrderPlan, OrderStatus } from "./constant.order";
 
 const PLAN_PRICES: Record<string, number> = {
-  premium: 299,
-  professional: 499,
+  premium: 99,
+  professional: 299,
+  enterprise: 699,
 };
 
 export async function createOrder(payload: {
@@ -20,18 +18,14 @@ export async function createOrder(payload: {
   screenshot?: string;
   note?: string;
 }) {
-  const paymentMethod = await PaymentMethod.findById(
-    payload.paymentMethodId,
-  );
+  const paymentMethod = await PaymentMethod.findById(payload.paymentMethodId);
 
   if (!paymentMethod || !paymentMethod.isActive) {
     throw new Error("Invalid or inactive payment method");
   }
 
   if (payload.plan === OrderPlan.ENTERPRISE) {
-    throw new Error(
-      "Enterprise subscription requires manual processing",
-    );
+    throw new Error("Enterprise subscription requires manual processing");
   }
 
   const amount = PLAN_PRICES[payload.plan];
@@ -83,47 +77,38 @@ export async function updateOrderStatus(
 
   await order.save();
 
-if (status === OrderStatus.APPROVED) {
-  const user = await User.findById(order.user);
+  if (status === OrderStatus.APPROVED) {
+    const user = await User.findById(order.user);
 
-  if (!user) {
-    throw new Error("User not found");
+    if (!user) {
+      throw new Error("User not found");
+    }
+
+    const now = new Date();
+    const currentExpiry = user.subscription?.expiresAt;
+
+    let newStartDate = now;
+    let newExpiryDate: Date;
+
+    if (user.subscription?.isActive && currentExpiry && currentExpiry > now) {
+      newStartDate = user.subscription.startedAt || now;
+
+      newExpiryDate = new Date(
+        currentExpiry.getTime() + 30 * 24 * 60 * 60 * 1000,
+      );
+    } else {
+      newStartDate = now;
+
+      newExpiryDate = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+    }
+
+    user.subscription.plan = order.plan;
+    user.subscription.isActive = true;
+    user.subscription.startedAt = newStartDate;
+    user.subscription.expiresAt = newExpiryDate;
+
+    await user.save();
   }
-
-  const now = new Date();
-  const currentExpiry = user.subscription?.expiresAt;
-
-  let newStartDate = now;
-  let newExpiryDate: Date;
-
-  if (
-    user.subscription?.isActive &&
-    currentExpiry &&
-    currentExpiry > now
-  ) {
-    newStartDate =
-      user.subscription.startedAt || now;
-
-    newExpiryDate = new Date(
-      currentExpiry.getTime() +
-        30 * 24 * 60 * 60 * 1000,
-    );
-  } else {
-    newStartDate = now;
-
-    newExpiryDate = new Date(
-      now.getTime() +
-        30 * 24 * 60 * 60 * 1000,
-    );
-  }
-
-  user.subscription.plan = order.plan;
-  user.subscription.isActive = true;
-  user.subscription.startedAt = newStartDate;
-  user.subscription.expiresAt = newExpiryDate;
-
-  await user.save();
-}
 
   return order;
 }

@@ -158,6 +158,15 @@ export const AI_CATEGORIES = {
   CINEMATIC: "cinematic",
   PROFESSIONAL: "professional",
   ANIME: "anime",
+
+  NINETIES_NOSTALGIA: "90s-nostalgia",
+  DURGA_PUJA: "durga-puja",
+  OLD_MONEY: "old-money",
+  VINTAGE_FILM: "vintage-film",
+  STREET_STYLE: "street-style",
+  ROYAL_PORTRAIT: "royal-portrait",
+  CYBERPUNK: "cyberpunk",
+  MONSOON_MOOD: "monsoon-mood",
 } as const;
 
 export type AIImageCategory =
