@@ -8,7 +8,10 @@ import {
 
 const aiImageSchema = new Schema<IAIImage>(
   {
-
+    _id: {
+      type: Schema.Types.ObjectId,
+      required: false,
+    },
     user: {
       type: Schema.Types.ObjectId,
       ref: "User",
@@ -37,12 +40,25 @@ const aiImageSchema = new Schema<IAIImage>(
 
     image: {
       type: String,
+      default: "",
+    },
+
+    requestId: {
+      type: String,
       required: true,
+      trim: true,
+      minlength: 1,
+      maxlength: 100,
+    },
+
+    creditReserved: {
+      type: Boolean,
+      default: false,
     },
 
     cloudinaryPublicId: {
       type: String,
-      required: true,
+      default: "",
     },
 
     status: {
@@ -57,6 +73,7 @@ const aiImageSchema = new Schema<IAIImage>(
       type: String,
       default: null,
       trim: true,
+      maxlength: 1000,
     },
   },
   {
@@ -79,6 +96,16 @@ aiImageSchema.index({
   provider: 1,
   model: 1,
 });
+
+aiImageSchema.index(
+  {
+    user: 1,
+    requestId: 1,
+  },
+  {
+    unique: true,
+  },
+);
 
 const AIImage: Model<IAIImage> =
   mongoose.models.AIImage ||

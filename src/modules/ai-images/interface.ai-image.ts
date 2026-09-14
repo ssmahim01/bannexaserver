@@ -2,43 +2,43 @@ import { Types } from "mongoose";
 import {
   AIImageCategory,
   AIProvider,
+  AI_GENERATION_STATUS,
 } from "./constant.ai-image";
-
-export interface IAIImage {
-  _id: Types.ObjectId;
-
-  user: Types.ObjectId;
-
-  // Generation configuration
-  category: AIImageCategory;
-  provider: AIProvider;
-
-  // AI model used
-  model?: string;
-
-  // Generated image
-  image: string;
-  cloudinaryPublicId: string;
-
-  // Generation status
-  status: string;
-
-  // Error information
-  errorMessage?: string | null;
-
-  // Timestamps
-  createdAt: Date;
-  updatedAt: Date;
-}
 
 export interface GenerateAIImagePayload {
   userId: string;
+  category: AIImageCategory;
+  imageBuffer: Buffer;
+  mimeType: string;
+  requestId: string;
+}
+
+export interface IAIImage {
+  _id?: Types.ObjectId;
+
+  user: Types.ObjectId;
 
   category: AIImageCategory;
 
-  imageBuffer: Buffer;
+  provider: AIProvider;
 
-  mimeType: string;
+  model?: string;
+
+  image: string;
+
+  cloudinaryPublicId: string;
+
+  requestId: string;
+
+  creditReserved: boolean;
+
+  status: (typeof AI_GENERATION_STATUS)[keyof typeof AI_GENERATION_STATUS];
+
+  errorMessage?: string | null;
+
+  createdAt: Date;
+
+  updatedAt: Date;
 }
 
 export interface GeneratedAIImage {

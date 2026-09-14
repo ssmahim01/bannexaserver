@@ -1,3 +1,5 @@
+import mongoose from "mongoose";
+
 import User from "../users/model.user";
 import AIImage from "./model.ai-image";
 
@@ -9,111 +11,79 @@ import {
   AIProvider,
   AI_PLAN_MODELS,
   AI_PLAN_PROVIDERS,
+  AI_UNLIMITED_PLANS,
 } from "./constant.ai-image";
 
-import { GenerateAIImagePayload, GeneratedAIImage } from "./interface.ai-image";
+import {
+  GenerateAIImagePayload,
+  GeneratedAIImage,
+  IAIImage,
+} from "./interface.ai-image";
 
 import { uploadToCloudinaryBuffer } from "../../utils/cloudinary";
 
 import { SubscriptionPlan } from "../users/constant.user";
 
 import { generateWithOpenRouter } from "./providers/openrouter.provider";
+import { generateWithHuggingFace } from "./providers/huggingface.provider";
 
 import { IUser } from "../users/interface.user";
 
 import { AI_PROMPTS } from "./prompt.ai-image";
-import { generateWithHuggingFace } from "./providers/huggingface.provider";
 
-async function resetMonthlyAIUsageIfNeeded(user: any): Promise<void> {
-  const now = new Date();
-
-  const resetAt = user.subscription?.aiGenerationResetAt
-    ? new Date(user.subscription.aiGenerationResetAt)
-    : null;
-
-  if (!resetAt || now >= resetAt) {
-    user.subscription.aiGenerationUsedThisMonth = 0;
-
-    user.subscription.aiGenerationResetAt = new Date(
-      now.getFullYear(),
-      now.getMonth() + 1,
-      1,
-    );
-
-    await user.save();
-  }
+function getNextMonthResetDate(date = new Date()) {
+  return new Date(date.getFullYear(), date.getMonth() + 1, 1);
 }
 
-export async function getAIUsage(userId: string) {
-  const user = await User.findById(userId).select("subscription");
-
-  if (!user) {
-    throw new Error("User not found");
-  }
-
-  if (!user.subscription) {
-    throw new Error("Subscription information not found");
-  }
-
-  const plan = user.subscription.plan as SubscriptionPlan;
-
-  const limit = AI_GENERATION_LIMITS[plan];
-
-  if (limit === undefined) {
-    throw new Error("AI generation limit is not configured for this plan");
-  }
-
+async function resetMonthlyAIUsageIfNeeded(userId: string) {
   const now = new Date();
+  const nextResetAt = getNextMonthResetDate(now);
 
-  if (
-    !user.subscription.aiGenerationResetAt ||
-    now >= user.subscription.aiGenerationResetAt
-  ) {
-    user.subscription.aiGenerationUsedThisMonth = 0;
+  await User.updateOne(
+    {
+      _id: userId,
 
-    user.subscription.aiGenerationResetAt = new Date(
-      now.getFullYear(),
-      now.getMonth() + 1,
-      1,
-    );
-
-    await user.save();
-  }
-
-  const used = user.subscription.aiGenerationUsedThisMonth ?? 0;
-
-  return {
-    plan,
-    used,
-    limit,
-    remaining: Math.max(0, limit - used),
-    resetAt: user.subscription.aiGenerationResetAt,
-  };
+      $or: [
+        {
+          "subscription.aiGenerationResetAt": {
+            $exists: false,
+          },
+        },
+        {
+          "subscription.aiGenerationResetAt": {
+            $lte: now,
+          },
+        },
+      ],
+    },
+    {
+      $set: {
+        "subscription.aiGenerationUsedThisMonth": 0,
+        "subscription.aiGenerationResetAt": nextResetAt,
+      },
+    },
+  );
 }
 
 function getAIPlanConfiguration(user: IUser) {
   const plan = user.subscription.plan;
 
   const provider = AI_PLAN_PROVIDERS[plan];
+
   const model = AI_PLAN_MODELS[plan];
+
   const limit = AI_GENERATION_LIMITS[plan];
 
   if (!provider) {
-    throw new Error(
-      "AI provider is not configured for this plan",
-    );
+    throw new Error("AI provider is not configured for this plan");
   }
 
   if (!model) {
-    throw new Error(
-      "AI model is not configured for this plan",
-    );
+    throw new Error("AI model is not configured for this plan");
   }
 
   if (limit === undefined) {
-    throw new Error(
-      "AI generation limit is not configured for this plan",
-    );
+    throw new Error("AI generation limit is not configured for this plan");
   }
 
   return {
@@ -121,6 +91,7 @@ function getAIPlanConfiguration(user: IUser) {
     provider,
     model,
     limit,
+    unlimited: AI_UNLIMITED_PLANS.includes(plan),
   };
 }
 
@@ -135,17 +106,22 @@ function getAIPrompt(category: AIImageCategory): string {
 ${prompt}
 
 Create a high-quality, visually polished image.
+
 Professional composition.
 Realistic details.
 Premium lighting.
 High visual quality.
+HD-quality output where supported.
 Suitable for a professional design platform.
 
 IMPORTANT:
 Use the uploaded image as the primary reference.
+
 Preserve the identity and recognizable characteristics
 of the person in the uploaded image.
+
 Do not replace the person with a different person.
+Do not create a different identity.
 `;
 }
 
@@ -173,127 +149,17 @@ async function generateImageByProvider(
       });
 
     default:
-      throw new Error(
-        `Unsupported AI provider: ${provider}`,
-      );
+      throw new Error(`Unsupported AI provider: ${provider}`);
   }
 }
 
-export async function generateAIImage(payload: GenerateAIImagePayload) {
-  const { userId, category, imageBuffer, mimeType } = payload;
-
-  if (!userId) {
-    throw new Error("User ID is required");
-  }
-
-  if (!category) {
-    throw new Error("AI category is required");
-  }
-
-  if (!imageBuffer || imageBuffer.length === 0) {
-    throw new Error("Image is required");
-  }
-
-  if (!mimeType || !mimeType.startsWith("image/")) {
-    throw new Error("Only image files are allowed");
-  }
-
-  const user = await User.findById(userId);
-
-  if (!user) {
-    throw new Error("User not found");
-  }
-
-  if (user.status === "block" || user.status === "suspend") {
-    throw new Error("Your account is not allowed to use AI");
-  }
-
-  await resetMonthlyAIUsageIfNeeded(user);
-
-  const { plan, provider, model, limit } = getAIPlanConfiguration(user);
-
-  const used = user.subscription.aiGenerationUsedThisMonth ?? 0;
-
-  if (used >= limit) {
-    throw new Error(
-      `You have reached your monthly AI generation limit of ${limit}.`,
-    );
-  }
-
-  const prompt = getAIPrompt(category as AIImageCategory);
-
-  let generated: GeneratedAIImage;
-
-  try {
-    generated = await generateImageByProvider(
-      provider,
-      model,
-      imageBuffer,
-      mimeType,
-      prompt,
-    );
-  } catch (error: unknown) {
-    console.error("AI provider generation error:", error);
-
-    const message =
-      error instanceof Error ? error.message : "AI image generation failed";
-
-    throw new Error(message);
-  }
-
-  let cloudinaryResult: any;
-
-  try {
-    cloudinaryResult = await uploadToCloudinaryBuffer(
-      generated.buffer,
-      "bannexa-ai",
-    );
-  } catch (error: unknown) {
-    console.error("AI Cloudinary upload error:", error);
-
-    throw new Error("Generated image could not be saved");
-  }
-
-  let aiImage;
-
-  try {
-    aiImage = await AIImage.create({
-      user: user._id,
-
-      category,
-
-      provider: generated.provider,
-
-      model: generated.model,
-
-      image: cloudinaryResult.secure_url,
-
-      cloudinaryPublicId: cloudinaryResult.public_id,
-
-      status: AI_GENERATION_STATUS.COMPLETED,
-    });
-  } catch (error: unknown) {
-    console.error("AI image database error:", error);
-
-    try {
-      if (cloudinaryResult?.public_id) {
-        const cloudinary = await import("../../config/cloudinary");
-
-        await cloudinary.default.uploader.destroy(cloudinaryResult.public_id);
-      }
-    } catch (cleanupError) {
-      console.error("Cloudinary cleanup failed:", cleanupError);
-    }
-
-    throw new Error("Generated image could not be saved");
-  }
-
-  user.subscription.aiGenerationUsedThisMonth = used + 1;
-
-  await user.save();
-
-  const currentUsage = user.subscription.aiGenerationUsedThisMonth;
-
+function buildGenerationResponse(
+  aiImage: IAIImage,
+  plan: SubscriptionPlan,
+  used: number,
+  limit: number,
+  unlimited: boolean,
+) {
   return {
     id: aiImage._id,
 
@@ -307,14 +173,533 @@ export async function generateAIImage(payload: GenerateAIImagePayload) {
 
     status: aiImage.status,
 
+    createdAt: aiImage.createdAt,
+
     plan,
 
     usage: {
-      used: currentUsage,
+      used,
 
-      limit,
+      limit: unlimited ? null : limit,
 
-      remaining: Math.max(limit - currentUsage, 0),
+      remaining: unlimited ? null : Math.max(limit - used, 0),
+
+      unlimited,
     },
   };
+}
+
+export async function getAIUsage(userId: string) {
+  if (!userId) {
+    throw new Error("User ID is required");
+  }
+
+  await resetMonthlyAIUsageIfNeeded(userId);
+
+  const user = await User.findById(userId).select("subscription").lean();
+
+  if (!user) {
+    throw new Error("User not found");
+  }
+
+  if (!user.subscription) {
+    throw new Error("Subscription information not found");
+  }
+
+  const plan = user.subscription.plan as SubscriptionPlan;
+
+  const limit = AI_GENERATION_LIMITS[plan];
+
+  if (limit === undefined) {
+    throw new Error("AI generation limit is not configured for this plan");
+  }
+
+  const unlimited = AI_UNLIMITED_PLANS.includes(plan);
+
+  const used = user.subscription.aiGenerationUsedThisMonth ?? 0;
+
+  return {
+    plan,
+
+    used,
+
+    limit: unlimited ? null : limit,
+
+    remaining: unlimited ? null : Math.max(limit - used, 0),
+
+    unlimited,
+
+    resetAt: user.subscription.aiGenerationResetAt,
+  };
+}
+
+export async function getMyAIGenerations(userId: string, page = 1, limit = 12) {
+  if (!userId) {
+    throw new Error("User ID is required");
+  }
+
+  const safePage = Math.min(100000, Math.max(1, Math.floor(Number(page) || 1)));
+
+  const safeLimit = Math.min(50, Math.max(1, Math.floor(Number(limit) || 12)));
+
+  const skip = (safePage - 1) * safeLimit;
+
+  const filter = {
+    user: userId,
+    status: AI_GENERATION_STATUS.COMPLETED,
+  };
+
+  const [items, total] = await Promise.all([
+    AIImage.find(filter)
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(safeLimit)
+      .select("_id category provider model image status createdAt updatedAt")
+      .lean(),
+
+    AIImage.countDocuments(filter),
+  ]);
+
+  const totalPages = Math.ceil(total / safeLimit);
+
+  return {
+    items,
+
+    pagination: {
+      page: safePage,
+
+      limit: safeLimit,
+
+      total,
+
+      totalPages,
+
+      hasNextPage: safePage < totalPages,
+
+      hasPreviousPage: safePage > 1,
+    },
+  };
+}
+
+export async function getMyAIImage(userId: string, imageId: string) {
+  if (!userId) {
+    throw new Error("User ID is required");
+  }
+
+  if (!imageId) {
+    throw new Error("AI image ID is required");
+  }
+
+  if (!mongoose.isValidObjectId(imageId)) {
+    throw new Error("AI image not found");
+  }
+
+  const aiImage = await AIImage.findOne({
+    _id: imageId,
+
+    user: userId,
+
+    status: AI_GENERATION_STATUS.COMPLETED,
+  }).lean();
+
+  if (!aiImage) {
+    throw new Error("AI image not found");
+  }
+
+  return aiImage;
+}
+
+export async function deleteMyAIImage(userId: string, imageId: string) {
+  if (!userId) {
+    throw new Error("User ID is required");
+  }
+
+  if (!imageId) {
+    throw new Error("AI image ID is required");
+  }
+
+  if (!mongoose.isValidObjectId(imageId)) {
+    throw new Error("AI image not found");
+  }
+
+  const aiImage = await AIImage.findOne({
+    _id: imageId,
+    user: userId,
+  });
+
+  if (!aiImage) {
+    throw new Error("AI image not found");
+  }
+
+  if (aiImage.cloudinaryPublicId) {
+    try {
+      const cloudinary = await import("../../config/cloudinary");
+
+      await cloudinary.default.uploader.destroy(aiImage.cloudinaryPublicId);
+    } catch (error) {
+      console.error("AI image Cloudinary delete error:", error);
+
+      throw new Error("AI image could not be deleted");
+    }
+  }
+  await AIImage.deleteOne({
+    _id: aiImage._id,
+    user: userId,
+  });
+
+  return {
+    success: true,
+  };
+}
+
+export async function generateAIImage(payload: GenerateAIImagePayload) {
+  const { userId, category, imageBuffer, mimeType, requestId } = payload;
+
+  if (!userId) {
+    throw new Error("User ID is required");
+  }
+
+  if (!category) {
+    throw new Error("AI category is required");
+  }
+
+  if (!requestId) {
+    throw new Error("AI generation request ID is required");
+  }
+
+  if (requestId.length > 100) {
+    throw new Error("Invalid AI generation request ID");
+  }
+
+  if (!imageBuffer?.length) {
+    throw new Error("Image is required");
+  }
+
+  if (!mimeType?.startsWith("image/")) {
+    throw new Error("Only image files are allowed");
+  }
+
+  const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
+
+  if (imageBuffer.length > MAX_IMAGE_SIZE) {
+    throw new Error("Image size cannot exceed 5 MB");
+  }
+  let user = await User.findById(userId);
+
+  if (!user) {
+    throw new Error("User not found");
+  }
+
+  if (user.status === "block" || user.status === "suspend") {
+    throw new Error("Your account is not allowed to use AI");
+  }
+
+  if (!user.subscription) {
+    throw new Error("Subscription information not found");
+  }
+  await resetMonthlyAIUsageIfNeeded(userId);
+  user = await User.findById(userId);
+
+  if (!user) {
+    throw new Error("User not found");
+  }
+
+  if (user.status === "block" || user.status === "suspend") {
+    throw new Error("Your account is not allowed to use AI");
+  }
+
+  if (!user.subscription) {
+    throw new Error("Subscription information not found");
+  }
+
+  const { plan, provider, model, limit, unlimited } =
+    getAIPlanConfiguration(user);
+
+  const prompt = getAIPrompt(category as AIImageCategory);
+
+  let aiImage: mongoose.HydratedDocument<IAIImage> | null = null;
+
+  const session = await mongoose.startSession();
+
+  try {
+    await session.withTransaction(async () => {
+      const existing = await AIImage.findOne({
+        user: userId,
+        requestId,
+      }).session(session);
+
+      if (existing) {
+        if (existing.status === AI_GENERATION_STATUS.COMPLETED) {
+          throw new Error("AI_GENERATION_ALREADY_COMPLETED");
+        }
+
+        if (existing.status === AI_GENERATION_STATUS.PROCESSING) {
+          throw new Error("AI_GENERATION_IN_PROGRESS");
+        }
+        throw new Error("AI_GENERATION_REQUEST_ALREADY_USED");
+      }
+
+      let reservedUser;
+
+      if (unlimited) {
+        reservedUser = await User.findOneAndUpdate(
+          {
+            _id: userId,
+          },
+          {
+            $inc: {
+              "subscription.aiGenerationUsedThisMonth": 1,
+            },
+          },
+          {
+            new: true,
+            session,
+          },
+        );
+      } else {
+        reservedUser = await User.findOneAndUpdate(
+          {
+            _id: userId,
+
+            "subscription.plan": plan,
+
+            "subscription.aiGenerationUsedThisMonth": {
+              $lt: limit,
+            },
+          },
+          {
+            $inc: {
+              "subscription.aiGenerationUsedThisMonth": 1,
+            },
+          },
+          {
+            new: true,
+            session,
+          },
+        );
+      }
+
+      if (!reservedUser) {
+        throw new Error(
+          `You have reached your monthly AI generation limit of ${limit}.`,
+        );
+      }
+      const created = await AIImage.create(
+        [
+          {
+            user: userId,
+
+            category,
+
+            provider,
+
+            model,
+
+            image: "",
+
+            cloudinaryPublicId: "",
+
+            requestId,
+
+            creditReserved: !unlimited,
+
+            status: AI_GENERATION_STATUS.PROCESSING,
+
+            errorMessage: null,
+          },
+        ],
+        {
+          session,
+        },
+      );
+
+      aiImage = created[0];
+    });
+  } catch (error: unknown) {
+    if (
+      error instanceof Error &&
+      error.message === "AI_GENERATION_ALREADY_COMPLETED"
+    ) {
+      const existing = await AIImage.findOne({
+        user: userId,
+        requestId,
+        status: AI_GENERATION_STATUS.COMPLETED,
+      }).lean();
+
+      if (!existing) {
+        throw new Error("AI image could not be found");
+      }
+
+      const freshUser = await User.findById(userId)
+        .select("subscription")
+        .lean();
+
+      if (!freshUser) {
+        throw new Error("User not found");
+      }
+
+      const used = freshUser.subscription?.aiGenerationUsedThisMonth ?? 0;
+
+      return buildGenerationResponse(existing, plan, used, limit, unlimited);
+    }
+
+    throw error;
+  } finally {
+    await session.endSession();
+  }
+
+  if (!aiImage) {
+    throw new Error("AI generation could not be initialized");
+  }
+
+  const initializedAIImage = aiImage as mongoose.HydratedDocument<IAIImage>;
+
+  let cloudinaryResult: any | null = null;
+
+  try {
+    const generated = await generateImageByProvider(
+      provider,
+      model,
+      imageBuffer,
+      mimeType,
+      prompt,
+    );
+
+    if (!generated?.buffer?.length) {
+      throw new Error("AI provider returned an empty image");
+    }
+    if (generated.buffer.length > 15 * 1024 * 1024) {
+      throw new Error("Generated image is too large");
+    }
+
+    cloudinaryResult = await uploadToCloudinaryBuffer(
+      generated.buffer,
+      "bannexa-ai",
+    );
+
+    if (!cloudinaryResult?.secure_url || !cloudinaryResult?.public_id) {
+      throw new Error("Generated image could not be saved");
+    }
+
+    const completed = await AIImage.findOneAndUpdate(
+      {
+        _id: initializedAIImage._id,
+
+        user: userId,
+
+        status: AI_GENERATION_STATUS.PROCESSING,
+      },
+      {
+        $set: {
+          image: cloudinaryResult.secure_url,
+
+          cloudinaryPublicId: cloudinaryResult.public_id,
+
+          provider: generated.provider,
+
+          model: generated.model,
+
+          status: AI_GENERATION_STATUS.COMPLETED,
+
+          errorMessage: null,
+
+          creditReserved: false,
+        },
+      },
+      {
+        new: true,
+        runValidators: true,
+      },
+    );
+
+    if (!completed) {
+      throw new Error("Generated image could not be saved");
+    }
+
+    const freshUser = await User.findById(userId).select("subscription").lean();
+
+    if (!freshUser) {
+      throw new Error("User not found");
+    }
+
+    const currentUsage = freshUser.subscription?.aiGenerationUsedThisMonth ?? 0;
+
+    return buildGenerationResponse(
+      completed,
+      plan,
+      currentUsage,
+      limit,
+      unlimited,
+    );
+  } catch (error: unknown) {
+    console.error("AI generation failed:", error);
+
+    if (cloudinaryResult?.public_id) {
+      try {
+        const cloudinary = await import("../../config/cloudinary");
+
+        await cloudinary.default.uploader.destroy(cloudinaryResult.public_id);
+      } catch (cleanupError) {
+        console.error("Cloudinary cleanup failed:", cleanupError);
+      }
+    }
+
+    try {
+      const session = await mongoose.startSession();
+
+      try {
+        await session.withTransaction(async () => {
+          const failed = await AIImage.findOneAndUpdate(
+            {
+              _id: aiImage!._id,
+
+              user: userId,
+
+              status: AI_GENERATION_STATUS.PROCESSING,
+
+              creditReserved: !unlimited,
+            },
+            {
+              $set: {
+                status: AI_GENERATION_STATUS.FAILED,
+
+                errorMessage: "AI image generation failed",
+
+                creditReserved: false,
+              },
+            },
+            {
+              new: true,
+              session,
+            },
+          );
+
+          if (failed && !unlimited) {
+            await User.updateOne(
+              {
+                _id: userId,
+
+                "subscription.aiGenerationUsedThisMonth": {
+                  $gt: 0,
+                },
+              },
+              {
+                $inc: {
+                  "subscription.aiGenerationUsedThisMonth": -1,
+                },
+              },
+              {
+                session,
+              },
+            );
+          }
+        });
+      } finally {
+        await session.endSession();
+      }
+    } catch (refundError) {
+      console.error("AI credit release transaction failed:", refundError);
+    }
+    throw new Error("AI image generation failed");
+  }
 }

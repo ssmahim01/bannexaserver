@@ -17,11 +17,19 @@ const aiCategoryValues = [
   AI_CATEGORIES.MONSOON_MOOD,
 ] as const;
 
-export const generateAIImageValidation = z.object({
-  category: z.enum(aiCategoryValues, {
-    message: "Invalid AI generation category",
-  }),
-});
+export const generateAIImageValidation =
+  z.object({
+    category: z.enum(aiCategoryValues, {
+      message:
+        "Invalid AI generation category",
+    }),
+
+    requestId: z
+      .string()
+      .uuid(
+        "Invalid AI generation request ID",
+      ),
+  });
 
 export type GenerateAIImageInput = z.infer<
   typeof generateAIImageValidation
