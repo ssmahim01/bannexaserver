@@ -30,6 +30,7 @@ import { generateWithHuggingFace } from "./providers/huggingface.provider";
 import { IUser } from "../users/interface.user";
 
 import { AI_PROMPTS } from "./prompt.ai-image";
+import { generateWithGemini } from "./providers/gemini.provider";
 
 function getNextMonthResetDate(date = new Date()) {
   return new Date(date.getFullYear(), date.getMonth() + 1, 1);
@@ -138,6 +139,14 @@ async function generateImageByProvider(
         imageBuffer,
         mimeType,
         prompt,
+      });
+
+    case AI_PROVIDERS.GEMINI:
+      return generateWithGemini({
+        imageBuffer,
+        mimeType,
+        prompt,
+        model,
       });
 
     case AI_PROVIDERS.OPENROUTER:
