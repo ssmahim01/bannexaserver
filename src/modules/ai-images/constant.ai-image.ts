@@ -11,16 +11,8 @@ export type AIProvider =
 
 export const AI_MODELS = {
   FREE: "Qwen/Qwen-Image-Edit",
-
-  GEMINI: "gemini-3.1-flash-image",
-
-  PAID: "bytedance-seed/seedream-5-0-pro",
-} as const;
-
-export const AI_GENERATION_STATUS = {
-  PROCESSING: "processing",
-  COMPLETED: "completed",
-  FAILED: "failed",
+  PAID: "gemini-3.1-flash-image",
+  ENTERPRISE: "bytedance-seed/seedream-5-0-pro",
 } as const;
 
 export const AI_PLAN_PROVIDERS: Record<
@@ -28,11 +20,8 @@ export const AI_PLAN_PROVIDERS: Record<
   AIProvider
 > = {
   free: AI_PROVIDERS.HUGGINGFACE,
-
   premium: AI_PROVIDERS.GEMINI,
-
-  professional: AI_PROVIDERS.OPENROUTER,
-
+  professional: AI_PROVIDERS.GEMINI,
   enterprise: AI_PROVIDERS.OPENROUTER,
 };
 
@@ -41,13 +30,16 @@ export const AI_PLAN_MODELS: Record<
   string
 > = {
   free: AI_MODELS.FREE,
-
-  premium: AI_MODELS.GEMINI,
-
+  premium: AI_MODELS.PAID,
   professional: AI_MODELS.PAID,
-
-  enterprise: AI_MODELS.PAID,
+  enterprise: AI_MODELS.ENTERPRISE,
 };
+
+export const AI_GENERATION_STATUS = {
+  PROCESSING: "processing",
+  COMPLETED: "completed",
+  FAILED: "failed",
+} as const;
 
 export const AI_GENERATION_LIMITS: Record<
   SubscriptionPlan,

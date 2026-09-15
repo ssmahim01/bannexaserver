@@ -36,6 +36,24 @@ function getNextMonthResetDate(date = new Date()) {
   return new Date(date.getFullYear(), date.getMonth() + 1, 1);
 }
 
+function shouldFallbackToGemini(error: unknown): boolean {
+  if (!(error instanceof Error)) return true;
+
+  const message = error.message.toLowerCase();
+
+  return (
+    message.includes("quota") ||
+    message.includes("credit") ||
+    message.includes("rate limit") ||
+    message.includes("too many requests") ||
+    message.includes("service unavailable") ||
+    message.includes("temporarily unavailable") ||
+    message.includes("503") ||
+    message.includes("429") ||
+    message.includes("timeout")
+  );
+}
+
 async function resetMonthlyAIUsageIfNeeded(userId: string) {
   const now = new Date();
   const nextResetAt = getNextMonthResetDate(now);
@@ -135,14 +153,29 @@ async function generateImageByProvider(
 ): Promise<GeneratedAIImage> {
   switch (provider) {
     case AI_PROVIDERS.HUGGINGFACE:
-      return generateWithHuggingFace({
-        imageBuffer,
-        mimeType,
-        prompt,
-      });
+      try {
+        return await generateWithHuggingFace({
+          imageBuffer,
+          mimeType,
+          prompt,
+        });
+      } catch (error) {
+        if (!shouldFallbackToGemini(error)) {
+          throw error;
+        }
+
+        console.warn("Hugging Face unavailable. Trying Gemini fallback...");
+
+        return await generateWithGemini({
+          imageBuffer,
+          mimeType,
+          prompt,
+          model: process.env.GEMINI_IMAGE_MODEL || "gemini-3.1-flash-image",
+        });
+      }
 
     case AI_PROVIDERS.GEMINI:
-      return generateWithGemini({
+      return await generateWithGemini({
         imageBuffer,
         mimeType,
         prompt,
@@ -150,7 +183,7 @@ async function generateImageByProvider(
       });
 
     case AI_PROVIDERS.OPENROUTER:
-      return generateWithOpenRouter({
+      return await generateWithOpenRouter({
         imageBuffer,
         mimeType,
         prompt,
@@ -158,7 +191,7 @@ async function generateImageByProvider(
       });
 
     default:
-      throw new Error(`Unsupported AI provider: ${provider}`);
+      throw new Error("Unsupported AI provider");
   }
 }
 

@@ -6,6 +6,7 @@ import { TemplateRoutes } from "./modules/templates/route.template";
 import { OrderRoutes } from "./modules/orders/route.order";
 import { PaymentMethodRoutes } from "./modules/payment-method/route.method";
 import { AIRoutes } from "./modules/ai-images/route.ai-image";
+import { SupportRoutes } from "./modules/support/route.support";
 
 const router = Router();
 
@@ -33,6 +34,10 @@ const moduleRoutes = [
   {
     path: "/payment-methods",
     route: PaymentMethodRoutes,
+  },
+  {
+    path: "/support",
+    route: SupportRoutes,
   },
   { path: "/ai-images", route: AIRoutes },
 ];
