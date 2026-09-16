@@ -2,8 +2,25 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import User from "./model.user";
 import config from "../../config/index";
-import { USER_STATUS, USER_ROLES, SUBSCRIPTION_PLANS } from "./constant.user";
+import { USER_STATUS, USER_ROLES, SUBSCRIPTION_PLANS, DOWNLOAD_LIMITS } from "./constant.user";
 import { invalidateAllUserTokens } from "../../utils/tokenBlacklist";
+
+function getDownloadLimitByPlan(plan?: string): number {
+  switch (plan) {
+    case SUBSCRIPTION_PLANS.PREMIUM:
+      return DOWNLOAD_LIMITS.PREMIUM;
+
+    case SUBSCRIPTION_PLANS.PROFESSIONAL:
+      return DOWNLOAD_LIMITS.PROFESSIONAL;
+
+    case SUBSCRIPTION_PLANS.ENTERPRISE:
+      return DOWNLOAD_LIMITS.ENTERPRISE;
+
+    case SUBSCRIPTION_PLANS.FREE:
+    default:
+      return DOWNLOAD_LIMITS.FREE;
+  }
+}
 
 export async function createUser(payload: any) {
   const exists = await User.findOne({ email: payload.email });
@@ -44,7 +61,34 @@ export async function findUserByEmail(email: string) {
 }
 
 export async function findUserById(userId: string) {
-  return User.findById(userId);
+  const user = await User.findById(userId).select("-password").lean();
+
+  if (!user) {
+    return null;
+  }
+
+  const plan = user.subscription?.plan ?? SUBSCRIPTION_PLANS.FREE;
+
+  const downloadUsedThisMonth =
+    user.subscription?.downloadUsedThisMonth ?? 0;
+
+  const downloadLimitMonth = getDownloadLimitByPlan(plan);
+
+  return {
+    ...user,
+
+    subscription: {
+      ...user.subscription,
+
+      plan,
+      downloadUsedThisMonth,
+      downloadLimitMonth,
+      downloadRemainingThisMonth: Math.max(
+        0,
+        downloadLimitMonth - downloadUsedThisMonth,
+      ),
+    },
+  };
 }
 
 export async function verifyPassword(user: any, plainPassword: string) {

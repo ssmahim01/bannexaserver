@@ -26,5 +26,12 @@ export const SUBSCRIPTION_PLANS = {
   ENTERPRISE: "enterprise",
 } as const;
 
+export const DOWNLOAD_LIMITS = {
+  FREE: 2,
+  PREMIUM: 15,
+  PROFESSIONAL: 50,
+  ENTERPRISE: Infinity, 
+} as const;
+
 export type SubscriptionPlan =
   (typeof SUBSCRIPTION_PLANS)[keyof typeof SUBSCRIPTION_PLANS];
