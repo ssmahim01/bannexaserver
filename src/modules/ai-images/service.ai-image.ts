@@ -115,33 +115,44 @@ function getAIPlanConfiguration(user: IUser) {
 }
 
 function getAIPrompt(category: AIImageCategory): string {
-  const prompt = AI_PROMPTS[category];
+  const categoryPrompt = AI_PROMPTS[category];
 
-  if (!prompt) {
+  if (!categoryPrompt) {
     throw new Error("Invalid AI generation category");
   }
 
-  return `
-${prompt}
+  const globalPrompt = `
+GLOBAL IMAGE GENERATION INSTRUCTIONS:
 
-Create a high-quality, visually polished image.
+Use the uploaded image as the primary visual reference.
 
-Professional composition.
-Realistic details.
-Premium lighting.
-High visual quality.
-HD-quality output where supported.
-Suitable for a professional design platform.
+IDENTITY PRESERVATION:
+- Preserve the person's recognizable identity and major facial characteristics.
+- Maintain the original facial structure, facial proportions, skin tone, age, and natural appearance where applicable.
+- Do not replace the person with an unrelated person or create a different identity.
+- Preserve the original pose and composition unless the category specifically requests a change.
+- Do not unnecessarily alter facial features.
 
-IMPORTANT:
-Use the uploaded image as the primary reference.
+IMAGE QUALITY:
+- Generate a high-quality, visually polished image.
+- Use professional composition and balanced framing.
+- Apply realistic lighting and natural details.
+- Maintain appropriate anatomy, proportions, and facial details.
+- Produce a premium result suitable for a professional creative design platform.
+- Avoid excessive smoothing, unnatural skin, distorted facial features, and artificial-looking details.
 
-Preserve the identity and recognizable characteristics
-of the person in the uploaded image.
-
-Do not replace the person with a different person.
-Do not create a different identity.
+CONTENT AND CLEAN OUTPUT:
+- Do not add text, captions, typography, watermarks, signatures, or random logos.
+- Do not add unnecessary objects or distracting visual elements.
+- Follow the selected category's creative direction accurately.
+- Preserve a coherent and visually consistent result.
 `;
+
+  return `
+${categoryPrompt.trim()}
+
+${globalPrompt.trim()}
+`.trim();
 }
 
 async function generateImageByProvider(
