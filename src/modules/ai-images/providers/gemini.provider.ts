@@ -57,7 +57,7 @@ export async function generateWithGemini({
 
       response_format: {
         type: "image",
-        mime_type: "image/png",
+        mime_type: "image/jpeg",
         image_size: "1K",
       },
     });
@@ -65,20 +65,13 @@ export async function generateWithGemini({
     const generatedImage = interaction.output_image;
 
     if (!generatedImage?.data) {
-      throw new Error(
-        "Gemini did not return a generated image",
-      );
+      throw new Error("Gemini did not return a generated image");
     }
 
-    const buffer = Buffer.from(
-      generatedImage.data,
-      "base64",
-    );
+    const buffer = Buffer.from(generatedImage.data, "base64");
 
     if (!buffer.length) {
-      throw new Error(
-        "Gemini returned an empty image",
-      );
+      throw new Error("Gemini returned an empty image");
     }
 
     return {
@@ -87,19 +80,12 @@ export async function generateWithGemini({
       model,
     };
   } catch (error: unknown) {
-    console.error(
-      "Gemini image generation error:",
-      error,
-    );
+    console.error("Gemini image generation error:", error);
 
     if (error instanceof Error) {
-      throw new Error(
-        `Gemini image generation failed: ${error.message}`,
-      );
+      throw new Error(`Gemini image generation failed: ${error.message}`);
     }
 
-    throw new Error(
-      "Gemini image generation failed",
-    );
+    throw new Error("Gemini image generation failed");
   }
 }

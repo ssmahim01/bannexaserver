@@ -8,10 +8,6 @@ import {
 
 const aiImageSchema = new Schema<IAIImage>(
   {
-    _id: {
-      type: Schema.Types.ObjectId,
-      required: false,
-    },
     user: {
       type: Schema.Types.ObjectId,
       ref: "User",

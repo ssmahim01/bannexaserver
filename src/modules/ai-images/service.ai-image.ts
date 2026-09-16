@@ -526,36 +526,38 @@ export async function generateAIImage(payload: GenerateAIImagePayload) {
           `You have reached your monthly AI generation limit of ${limit}.`,
         );
       }
-      const created = await AIImage.create(
-        [
-          {
-            user: userId,
+      const newAIImage = new AIImage({
+        user: userId,
 
-            category,
+        category,
 
-            provider,
+        provider,
 
-            model,
+        model,
 
-            image: "",
+        image: "",
 
-            cloudinaryPublicId: "",
+        cloudinaryPublicId: "",
 
-            requestId,
+        requestId,
 
-            creditReserved: !unlimited,
+        creditReserved: !unlimited,
 
-            status: AI_GENERATION_STATUS.PROCESSING,
+        status: AI_GENERATION_STATUS.PROCESSING,
 
-            errorMessage: null,
-          },
-        ],
-        {
-          session,
-        },
-      );
+        errorMessage: null,
+      });
 
-      aiImage = created[0];
+      // Ensure Mongoose generates the document ID
+      if (!newAIImage._id) {
+        throw new Error("AI image document ID could not be generated");
+      }
+
+      await newAIImage.save({
+        session,
+      });
+
+      aiImage = newAIImage;
     });
   } catch (error: unknown) {
     if (
