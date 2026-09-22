@@ -4,6 +4,7 @@ export const AI_PROVIDERS = {
   HUGGINGFACE: "huggingface",
   GEMINI: "gemini",
   OPENROUTER: "openrouter",
+    CLIPDROP: "clipdrop",
 } as const;
 
 export type AIProvider =

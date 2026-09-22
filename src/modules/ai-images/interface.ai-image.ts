@@ -13,12 +13,24 @@ export interface GenerateAIImagePayload {
   requestId: string;
 }
 
+export type AIGenerationType = "image" | "template";
+
 export interface IAIImage {
   _id?: Types.ObjectId;
 
   user: Types.ObjectId;
 
-  category: AIImageCategory;
+  category?: AIImageCategory | null;
+
+  generationType?: AIGenerationType;
+
+  templateId?: Types.ObjectId;
+
+  templateCategory?: string;
+
+  templateEvent?: string;
+
+  templateSelections?: Record<string, unknown>;
 
   provider: AIProvider;
 

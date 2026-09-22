@@ -1,5 +1,7 @@
 import mongoose, { Schema, Model } from "mongoose";
+
 import { IAIImage } from "./interface.ai-image";
+
 import {
   AI_CATEGORIES,
   AI_GENERATION_STATUS,
@@ -18,8 +20,28 @@ const aiImageSchema = new Schema<IAIImage>(
     category: {
       type: String,
       enum: Object.values(AI_CATEGORIES),
+      default: null,
+      index: true,
+    },
+
+    generationType: {
+      type: String,
+      enum: ["image", "template"],
+      default: "image",
       required: true,
       index: true,
+    },
+
+    templateId: {
+      type: Schema.Types.ObjectId,
+      ref: "GeneratorTemplate",
+      default: null,
+      index: true,
+    },
+
+    templateSelections: {
+      type: Schema.Types.Mixed,
+      default: null,
     },
 
     provider: {
@@ -93,6 +115,17 @@ aiImageSchema.index({
   model: 1,
 });
 
+aiImageSchema.index({
+  user: 1,
+  generationType: 1,
+  createdAt: -1,
+});
+
+aiImageSchema.index({
+  templateId: 1,
+  createdAt: -1,
+});
+
 aiImageSchema.index(
   {
     user: 1,
@@ -104,7 +137,6 @@ aiImageSchema.index(
 );
 
 const AIImage: Model<IAIImage> =
-  mongoose.models.AIImage ||
-  mongoose.model<IAIImage>("AIImage", aiImageSchema);
+  mongoose.models.AIImage || mongoose.model<IAIImage>("AIImage", aiImageSchema);
 
 export default AIImage;

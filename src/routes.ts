@@ -7,6 +7,7 @@ import { OrderRoutes } from "./modules/orders/route.order";
 import { PaymentMethodRoutes } from "./modules/payment-method/route.method";
 import { AIRoutes } from "./modules/ai-images/route.ai-image";
 import { SupportRoutes } from "./modules/support/route.support";
+import { TemplateGeneratorRoutes } from "./modules/template-generator/route.template-generator";
 
 const router = Router();
 
@@ -38,6 +39,10 @@ const moduleRoutes = [
   {
     path: "/support",
     route: SupportRoutes,
+  },
+  {
+    path: "/template-generator",
+    route: TemplateGeneratorRoutes,
   },
   { path: "/ai-images", route: AIRoutes },
 ];
