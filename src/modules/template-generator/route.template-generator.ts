@@ -1,24 +1,26 @@
 import { Router } from "express";
 
 import {
-  getGeneratorCategoriesController,
-  getGeneratorEventsController,
-  getGeneratorTemplatesController,
-  getGeneratorTemplateController,
   generateTemplateImageController,
+  getTemplateGenerationHistoryController,
+  getTemplateGenerationController,
+  deleteTemplateGenerationController,
 } from "./controller.template-generator";
+
 import { authMiddleware } from "../../middlewares/auth.middleware";
 
 const router = Router();
 
-router.get("/categories", getGeneratorCategoriesController);
-
-router.get("/categories/:categoryId/events", getGeneratorEventsController);
-
-router.get("/events/:eventId/templates", getGeneratorTemplatesController);
-
-router.get("/templates/:templateId", getGeneratorTemplateController);
-
 router.post("/generate", authMiddleware, generateTemplateImageController);
+
+router.get("/history", authMiddleware, getTemplateGenerationHistoryController);
+
+router.get("/history/:id", authMiddleware, getTemplateGenerationController);
+
+router.delete(
+  "/history/:id",
+  authMiddleware,
+  deleteTemplateGenerationController,
+);
 
 export const TemplateGeneratorRoutes = router;

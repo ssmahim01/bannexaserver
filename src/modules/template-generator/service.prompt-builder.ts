@@ -1,56 +1,71 @@
-import { IGeneratorTemplate } from "./model.generator-template";
+const MAX_PROMPT_LENGTH = 1000;
 
-interface BuildPromptParams {
-  template: IGeneratorTemplate;
-  values: Record<string, unknown>;
+interface BuildTemplatePromptParams {
+  category: string;
+  event: string;
+  template: string;
+  values: Record<string, string>;
+}
+
+function clean(value: string): string {
+  return value.trim().replace(/\s+/g, " ");
 }
 
 export function buildTemplatePrompt({
+  category,
+  event,
   template,
   values,
-}: BuildPromptParams): string {
-  let prompt = template.promptTemplate;
+}: BuildTemplatePromptParams): string {
+  const selectedOptions = Object.entries(values)
+    .map(([key, value]) => {
+      const cleanedValue = clean(value);
 
-  for (const field of template.fields) {
-    const value = values[field.key];
+      if (!cleanedValue) {
+        return null;
+      }
 
-    if (value === undefined || value === null || value === "") {
-      continue;
-    }
+      return `${key}: ${cleanedValue}`;
+    })
+    .filter((value): value is string => Boolean(value))
+    .join("\n");
 
-    const stringValue = String(value).trim();
+  const prompt = `
+Create a professional, premium-quality social media graphic.
 
-    prompt = prompt.replace(
-      new RegExp(`{{\\s*${field.key}\\s*}}`, "g"),
-      stringValue,
+CATEGORY:
+${clean(category)}
+
+EVENT:
+${clean(event)}
+
+TEMPLATE:
+${clean(template)}
+
+CUSTOMIZATION:
+${selectedOptions || "No additional customization provided."}
+
+DESIGN REQUIREMENTS:
+- Follow the selected category, event, and template style.
+- Create a polished commercial-quality composition.
+- Use strong visual hierarchy.
+- Use premium typography and professional layout.
+- Keep important text readable and properly positioned.
+- Respect selected colors, language, teams, people, and messages.
+- Make the design culturally and contextually appropriate.
+- Create a visually striking social-media-ready design.
+- Maintain balanced spacing and composition.
+- Do not add random logos.
+- Do not add watermarks.
+- Do not add unrelated text.
+- Do not add unnecessary borders or UI elements.
+`.trim();
+
+  if (prompt.length > MAX_PROMPT_LENGTH) {
+    throw new Error(
+      "The selected customization creates a prompt that is too long. Please use shorter text.",
     );
   }
 
-  const additionalContext = Object.entries(values)
-    .filter(
-      ([, value]) =>
-        value !== undefined &&
-        value !== null &&
-        String(value).trim() !== "",
-    )
-    .map(([key, value]) => `${key}: ${String(value).trim()}`)
-    .join("\n");
-
-  return `
-${prompt}
-
-USER SELECTED OPTIONS:
-${additionalContext}
-
-QUALITY REQUIREMENTS:
-- Professional commercial design
-- Strong visual hierarchy
-- Balanced composition
-- High-quality visual details
-- Suitable for social media
-- Premium creative appearance
-- Clean and visually coherent composition
-- No watermark
-- No random logos
-`.trim();
+  return prompt;
 }

@@ -20,6 +20,7 @@ const aiImageSchema = new Schema<IAIImage>(
     category: {
       type: String,
       enum: Object.values(AI_CATEGORIES),
+      required: false,
       default: null,
       index: true,
     },

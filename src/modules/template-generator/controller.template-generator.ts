@@ -1,137 +1,12 @@
 import { Request, Response } from "express";
-import { Types } from "mongoose";
 
 import { generateTemplateImageValidation } from "./validation.template-generator";
-
 import {
-  getGeneratorCategories,
-  getGeneratorEvents,
-  getGeneratorTemplates,
-  getGeneratorTemplate,
+  deleteTemplateGeneration,
   generateTemplateImage,
+  getTemplateGenerationById,
+  getTemplateGenerationHistory,
 } from "./service.template-generator";
-
-export const getGeneratorCategoriesController = async (
-  req: Request,
-  res: Response,
-) => {
-  try {
-    const categories = await getGeneratorCategories();
-
-    return res.status(200).json({
-      success: true,
-      message: "Template generator categories fetched successfully",
-      data: categories,
-    });
-  } catch (error) {
-    console.error("Get generator categories controller error:", error);
-
-    return res.status(500).json({
-      success: false,
-      message: "Failed to fetch template generator categories",
-    });
-  }
-};
-
-export const getGeneratorEventsController = async (
-  req: Request,
-  res: Response,
-) => {
-  try {
-    const { categoryId } = req.params;
-
-    if (!Types.ObjectId.isValid(categoryId as string)) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid category ID",
-      });
-    }
-
-    const events = await getGeneratorEvents(categoryId as string);
-
-    return res.status(200).json({
-      success: true,
-      message: "Template generator events fetched successfully",
-      data: events,
-    });
-  } catch (error) {
-    console.error("Get generator events controller error:", error);
-
-    return res.status(500).json({
-      success: false,
-      message: "Failed to fetch template generator events",
-    });
-  }
-};
-
-export const getGeneratorTemplatesController = async (
-  req: Request,
-  res: Response,
-) => {
-  try {
-    const { eventId } = req.params;
-
-    if (!Types.ObjectId.isValid(eventId as string)) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid event ID",
-      });
-    }
-
-    const templates = await getGeneratorTemplates(eventId as string);
-
-    return res.status(200).json({
-      success: true,
-      message: "Generator templates fetched successfully",
-      data: templates,
-    });
-  } catch (error) {
-    console.error("Get generator templates controller error:", error);
-
-    return res.status(500).json({
-      success: false,
-      message: "Failed to fetch generator templates",
-    });
-  }
-};
-
-export const getGeneratorTemplateController = async (
-  req: Request,
-  res: Response,
-) => {
-  try {
-    const { templateId } = req.params;
-
-    if (!Types.ObjectId.isValid(templateId as string)) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid template ID",
-      });
-    }
-
-    const template = await getGeneratorTemplate(templateId as string);
-
-    if (!template) {
-      return res.status(404).json({
-        success: false,
-        message: "Template not found",
-      });
-    }
-
-    return res.status(200).json({
-      success: true,
-      message: "Generator template fetched successfully",
-      data: template,
-    });
-  } catch (error) {
-    console.error("Get generator template controller error:", error);
-
-    return res.status(500).json({
-      success: false,
-      message: "Failed to fetch generator template",
-    });
-  }
-};
 
 export const generateTemplateImageController = async (
   req: Request,
@@ -159,13 +34,16 @@ export const generateTemplateImageController = async (
       });
     }
 
-    const { templateId, requestId, values } = validationResult.data;
+    const { category, event, template, values, requestId } =
+      validationResult.data;
 
     const result = await generateTemplateImage({
       userId,
-      templateId,
-      requestId,
+      category,
+      event,
+      template,
       values,
+      requestId,
     });
 
     return res.status(201).json({
@@ -182,38 +60,21 @@ export const generateTemplateImageController = async (
         : "Template image generation failed";
 
     if (
-      errorMessage.includes("Template not found") ||
-      errorMessage.includes("template not found")
+      errorMessage === "AI_GENERATION_ALREADY_COMPLETED" ||
+      errorMessage === "AI_GENERATION_IN_PROGRESS" ||
+      errorMessage === "AI_GENERATION_REQUEST_ALREADY_USED"
     ) {
-      return res.status(404).json({
+      return res.status(409).json({
         success: false,
-        message: errorMessage,
+        message:
+          errorMessage === "AI_GENERATION_ALREADY_COMPLETED"
+            ? "This generation request has already been completed."
+            : errorMessage === "AI_GENERATION_IN_PROGRESS"
+              ? "This generation request is already being processed."
+              : "This generation request has already been used.",
       });
     }
 
-    if (
-      errorMessage.includes("Invalid") ||
-      errorMessage.includes("required") ||
-      errorMessage.includes("cannot exceed") ||
-      errorMessage.includes("not allowed") ||
-      errorMessage.includes("must be")
-    ) {
-      return res.status(400).json({
-        success: false,
-        message: errorMessage,
-      });
-    }
-
-    if (
-      errorMessage === "User not found" ||
-      errorMessage.includes("account is") ||
-      errorMessage.includes("subscription is inactive")
-    ) {
-      return res.status(403).json({
-        success: false,
-        message: errorMessage,
-      });
-    }
     if (
       errorMessage.includes("generation limit") ||
       errorMessage.includes("monthly limit") ||
@@ -227,10 +88,25 @@ export const generateTemplateImageController = async (
     }
 
     if (
-      errorMessage.includes("already processing") ||
-      errorMessage.includes("already completed")
+      errorMessage === "User not found" ||
+      errorMessage.includes("account is not allowed") ||
+      errorMessage.includes("subscription information")
     ) {
-      return res.status(409).json({
+      return res.status(403).json({
+        success: false,
+        message: errorMessage,
+      });
+    }
+
+    if (
+      errorMessage.includes("required") ||
+      errorMessage.includes("Invalid") ||
+      errorMessage.includes("invalid") ||
+      errorMessage.includes("cannot exceed") ||
+      errorMessage.includes("must be") ||
+      errorMessage.includes("too long")
+    ) {
+      return res.status(400).json({
         success: false,
         message: errorMessage,
       });
@@ -238,8 +114,9 @@ export const generateTemplateImageController = async (
 
     if (
       errorMessage.includes("Clipdrop") ||
-      errorMessage.includes("generation failed") ||
-      errorMessage.includes("image generation")
+      errorMessage.includes("image generation") ||
+      errorMessage.includes("Generated image") ||
+      errorMessage.includes("generation failed")
     ) {
       return res.status(502).json({
         success: false,
@@ -250,6 +127,188 @@ export const generateTemplateImageController = async (
     return res.status(500).json({
       success: false,
       message: "Failed to generate template image",
+    });
+  }
+};
+
+export const getTemplateGenerationHistoryController = async (
+  req: Request,
+  res: Response,
+) => {
+  try {
+    const userId = req.user?._id?.toString();
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: "Authentication required",
+      });
+    }
+
+    const page = Number(req.query.page) || 1;
+    const limit = Number(req.query.limit) || 20;
+
+    const result = await getTemplateGenerationHistory(userId, {
+      page,
+      limit,
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Template generation history fetched successfully",
+      data: result.data,
+      pagination: result.pagination,
+    });
+  } catch (error) {
+    console.error("Get template generation history controller error:", error);
+
+    const message =
+      error instanceof Error
+        ? error.message
+        : "Failed to fetch template generation history";
+
+    if (message.includes("User ID") || message.includes("Invalid")) {
+      return res.status(400).json({
+        success: false,
+        message,
+      });
+    }
+
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch template generation history",
+    });
+  }
+};
+
+export const getTemplateGenerationController = async (
+  req: Request,
+  res: Response,
+) => {
+  try {
+    const userId = req.user?._id?.toString();
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: "Authentication required",
+      });
+    }
+
+    const { id } = req.params;
+
+    if (!id) {
+      return res.status(400).json({
+        success: false,
+        message: "Generation ID is required",
+      });
+    }
+
+    const result = await getTemplateGenerationById(userId, id as string);
+
+    return res.status(200).json({
+      success: true,
+      message: "Template generation fetched successfully",
+      data: result,
+    });
+  } catch (error) {
+    console.error("Get template generation controller error:", error);
+
+    const message =
+      error instanceof Error
+        ? error.message
+        : "Failed to fetch template generation";
+
+    if (message === "Generated template image not found") {
+      return res.status(404).json({
+        success: false,
+        message,
+      });
+    }
+
+    if (message.includes("required") || message.includes("Invalid")) {
+      return res.status(400).json({
+        success: false,
+        message,
+      });
+    }
+
+    return res.status(500).json({
+      success: false,
+      message: "Failed to fetch template generation",
+    });
+  }
+};
+
+export const deleteTemplateGenerationController = async (
+  req: Request,
+  res: Response,
+) => {
+  try {
+    const userId = req.user?._id?.toString();
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: "Authentication required",
+      });
+    }
+
+    const { id } = req.params;
+
+    if (!id) {
+      return res.status(400).json({
+        success: false,
+        message: "Generation ID is required",
+      });
+    }
+
+    const result = await deleteTemplateGeneration(userId, id as string);
+
+    return res.status(200).json({
+      success: true,
+      message: "Template generation deleted successfully",
+      data: result,
+    });
+  } catch (error) {
+    console.error("Delete template generation controller error:", error);
+
+    const message =
+      error instanceof Error
+        ? error.message
+        : "Failed to delete template generation";
+
+    if (message === "Generated template image not found") {
+      return res.status(404).json({
+        success: false,
+        message,
+      });
+    }
+
+    if (message.includes("required") || message.includes("Invalid")) {
+      return res.status(400).json({
+        success: false,
+        message,
+      });
+    }
+
+    if (message.includes("cannot be deleted")) {
+      return res.status(409).json({
+        success: false,
+        message,
+      });
+    }
+
+    if (message.includes("storage")) {
+      return res.status(502).json({
+        success: false,
+        message,
+      });
+    }
+
+    return res.status(500).json({
+      success: false,
+      message: "Failed to delete template generation",
     });
   }
 };

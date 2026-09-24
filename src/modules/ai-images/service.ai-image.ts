@@ -207,7 +207,7 @@ async function generateImageByProvider(
 }
 
 function buildGenerationResponse(
-  aiImage: IAIImage,
+  aiImage: IAIImage | any,
   plan: SubscriptionPlan,
   used: number,
   limit: number,

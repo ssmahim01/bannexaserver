@@ -1,24 +1,31 @@
 import { z } from "zod";
 
-export const objectIdSchema = z
+const identifierSchema = z
   .string()
-  .regex(
-    /^[0-9a-fA-F]{24}$/,
-    "Invalid ID",
-  );
+  .trim()
+  .min(1, "Value is required")
+  .max(150, "Value cannot exceed 150 characters");
 
-export const generateTemplateImageValidation =
-  z.object({
-    templateId: objectIdSchema,
+const templateValueSchema = z
+  .string()
+  .trim()
+  .max(500, "Template value cannot exceed 500 characters");
 
-    requestId: z.string().uuid(
-      "Invalid template generation request ID",
-    ),
+export const generateTemplateImageValidation = z.object({
+  requestId: z
+    .string()
+    .uuid("Invalid template generation request ID"),
 
-    values: z
-      .record(z.string(), z.unknown())
-      .default({}),
-  });
+  category: identifierSchema,
+
+  event: identifierSchema,
+
+  template: identifierSchema,
+
+  values: z
+    .record(z.string(), templateValueSchema)
+    .default({}),
+});
 
 export type GenerateTemplateImageInput = z.infer<
   typeof generateTemplateImageValidation

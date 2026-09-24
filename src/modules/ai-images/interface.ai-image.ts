@@ -16,8 +16,6 @@ export interface GenerateAIImagePayload {
 export type AIGenerationType = "image" | "template";
 
 export interface IAIImage {
-  _id?: Types.ObjectId;
-
   user: Types.ObjectId;
 
   category?: AIImageCategory | null;
